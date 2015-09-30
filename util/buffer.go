@@ -78,17 +78,19 @@ func (buf *InputBuffer) ReadBytes(length uint) ([]byte, error) {
 }
 
 type OutputBuffer struct {
+	pos  uint
 	data []uint8
 }
 
 func NewOutputBuffer(length uint) *OutputBuffer {
 	return &OutputBuffer{
-		data: make([]uint8, 0, length),
+		pos:  0,
+		data: make([]uint8, length, length),
 	}
 }
 
 func (out *OutputBuffer) Len() uint {
-	return uint(len(out.data))
+	return out.pos
 }
 
 func (out *OutputBuffer) Capacity() uint {
@@ -96,11 +98,11 @@ func (out *OutputBuffer) Capacity() uint {
 }
 
 func (out *OutputBuffer) Data() []uint8 {
-	return out.data
+	return out.data[0:out.pos]
 }
 
 func (out *OutputBuffer) At(pos uint) (uint8, error) {
-	if pos < out.Len() {
+	if pos < out.Capacity() {
 		return out.data[pos], nil
 	} else {
 		return 0, errors.New("out of range")
@@ -108,21 +110,35 @@ func (out *OutputBuffer) At(pos uint) (uint8, error) {
 }
 
 func (out *OutputBuffer) Skip(length uint) {
-	l := out.Len() + length
+	l := out.pos + length
 	out.ensureSpace(l)
+	out.pos = l
+}
+
+func (out *OutputBuffer) Seek(pos uint) (uint, error) {
+	if pos >= uint(len(out.data)) {
+		return 0, errors.New("seek out of scope")
+	}
+
+	oldp := out.pos
+	out.pos = pos
+	return oldp, nil
 }
 
 func (out *OutputBuffer) Trim(length uint) error {
-	if length > out.Len() {
+	if length > out.pos {
 		return errors.New("trim too large from output buffer")
 	} else {
-		out.data = out.data[0:(out.Len() - length)]
+		pos := out.pos - length
+		out.data = out.data[0:pos]
+		out.pos = pos
 		return nil
 	}
 }
 
 func (out *OutputBuffer) ensureSpace(length uint) {
 	c := out.Capacity()
+
 	if c < length {
 		if c == 0 {
 			c = 1024
@@ -130,22 +146,26 @@ func (out *OutputBuffer) ensureSpace(length uint) {
 		for c < length {
 			c = c * 2
 		}
-		d := make([]uint8, length, c)
+		d := make([]uint8, c, c)
 		copy(d, out.data)
 		out.data = d
 	}
 }
 
 func (out *OutputBuffer) Clear() {
-	out.data = out.data[0:0]
+	out.pos = 0
+	out.data = []uint8{}
 }
 
 func (out *OutputBuffer) WriteUint8(data uint8) {
-	out.data = append(out.data, data)
+	pos := out.pos
+	out.ensureSpace(pos + 1)
+	out.data[pos] = data
+	out.pos += 1
 }
 
 func (out *OutputBuffer) WriteUint8At(data uint8, pos uint) error {
-	if pos+1 > out.Len() {
+	if pos+1 > out.Capacity() {
 		return errors.New("write at invalid pos")
 	} else {
 		out.data[pos] = data
@@ -154,11 +174,15 @@ func (out *OutputBuffer) WriteUint8At(data uint8, pos uint) error {
 }
 
 func (out *OutputBuffer) WriteUint16(data uint16) {
-	out.data = append(out.data, uint8((data&0xff00)>>8), uint8(data&0x00ff))
+	pos := out.pos
+	out.ensureSpace(pos + 2)
+	out.data[pos] = uint8((data & 0xff00) >> 8)
+	out.data[pos+1] = uint8(data & 0x00ff)
+	out.pos += 2
 }
 
 func (out *OutputBuffer) WriteUint16At(data uint16, pos uint) error {
-	if pos+2 > out.Len() {
+	if pos+2 > out.Capacity() {
 		return errors.New("write at invalid pos")
 	} else {
 		out.data[pos] = uint8((data & 0xff00) >> 8)
@@ -168,13 +192,21 @@ func (out *OutputBuffer) WriteUint16At(data uint16, pos uint) error {
 }
 
 func (out *OutputBuffer) WriteUint32(data uint32) {
-	out.data = append(out.data,
-		uint8((data&0xff000000)>>24),
-		uint8((data&0x00ff0000)>>16),
-		uint8((data&0x0000ff00)>>8),
-		uint8(data&0x000000ff))
+	pos := out.pos
+	out.ensureSpace(pos + 4)
+	out.data[pos] = uint8((data & 0xff000000) >> 24)
+	out.data[pos+1] = uint8((data & 0x00ff0000) >> 16)
+	out.data[pos+2] = uint8((data & 0x0000ff00) >> 8)
+	out.data[pos+3] = uint8(data & 0x000000ff)
+	out.pos += 4
 }
 
 func (out *OutputBuffer) WriteData(data []uint8) {
-	out.data = append(out.data, data...)
+	l := len(data)
+	pos := out.pos
+	dl := uint(l) + pos
+	out.ensureSpace(dl)
+
+	copy(out.data[pos:dl], data)
+	out.pos = dl
 }

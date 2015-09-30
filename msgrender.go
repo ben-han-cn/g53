@@ -20,8 +20,6 @@ type nameComparator struct {
 	caseSensitive bool
 }
 
-var logger *log.Logger = log.New(os.Stdout, "[debug]", 0)
-
 func (c *nameComparator) compare(item *offsetItem) bool {
 	if item.hash != c.hash || item.l != uint16(c.nameBuf.Len()) {
 		return false
