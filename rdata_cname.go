@@ -34,7 +34,7 @@ func CNameFromWire(buffer *util.InputBuffer, ll uint16) (*CName, error) {
 	}
 }
 
-func CNameFromStr(s string) (*CName, error) {
+func CNameFromString(s string) (*CName, error) {
 	n, err := fieldFromStr(RDF_D_NAME, s)
 	if err == nil {
 		name, _ := n.(*Name)

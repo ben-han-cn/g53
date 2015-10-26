@@ -14,14 +14,10 @@ func TestNameConcat(t *testing.T) {
 	if relationship.Order != 0 ||
 		relationship.CommonLabelCount != 4 ||
 		relationship.Relation != EQUAL {
-		errorStr, _ := knetcn2.String(true)
-		t.Errorf("n1 should equal to www.knet.cn,but get %v", errorStr)
+		t.Errorf("n1 should equal to www.knet.cn,but get %v", knetcn2.String(true))
 	}
 
-	knetcnReverse, err := knetcn.Reverse().String(false)
-	if err != nil {
-		t.Errorf("name reverse get error: %v", err)
-	}
+	knetcnReverse := knetcn.Reverse().String(false)
 
 	if knetcnReverse != "cn.knet.www." {
 		t.Errorf("www.knet.com reverse should be com.baidu.www. but get %v", knetcnReverse)
@@ -85,12 +81,12 @@ func TestNameStrip(t *testing.T) {
 	wwwtld, _ := knetmixcase.StripRight(2)
 	NameEqToStr(t, wwwtld, "www")
 
-	wwwString, _ := wwwtld.String(true)
+	wwwString := wwwtld.String(true)
 	if wwwString != "www" {
 		t.Errorf("wwwString to string should be www but %v", wwwString)
 	}
 
-	wwwString, _ = wwwtld.String(false)
+	wwwString = wwwtld.String(false)
 	if wwwString != "www." {
 		t.Errorf("wwwString to string should be www. but %v", wwwString)
 	}

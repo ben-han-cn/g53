@@ -144,8 +144,7 @@ func rendField(ct RDFCodingType, data interface{}, render *MsgRender) {
 	case RDF_C_UINT32:
 		d, _ := data.(uint32)
 		render.WriteUint32(d)
-	case RDF_C_IPV4:
-	case RDF_C_IPV6:
+	case RDF_C_IPV4, RDF_C_IPV6:
 		d, _ := data.(net.IP)
 		render.WriteData([]uint8(d))
 	case RDF_C_BINARY:
@@ -272,8 +271,7 @@ func fieldToStr(dt RDFDisplayType, d interface{}) string {
 	switch dt {
 	case RDF_D_NAME:
 		n, _ := d.(*Name)
-		s, _ := n.String(false)
-		return s
+		return n.String(false)
 	case RDF_D_INT:
 		return fmt.Sprintf("%v", d)
 	case RDF_D_IP:

@@ -396,7 +396,7 @@ func (name *Name) LabelCount() uint {
 	return name.labelCount
 }
 
-func (name *Name) String(omitFinalDot bool) (string, error) {
+func (name *Name) String(omitFinalDot bool) string {
 	labels := name.labelCount
 	count := MAX_LABEL_LEN + 1
 
@@ -413,35 +413,34 @@ func (name *Name) String(omitFinalDot bool) (string, error) {
 			break
 		}
 
-		if count <= MAX_LABEL_LEN {
-			if result.Len() != 0 {
-				result.WriteRune('.')
-			}
+		if count > MAX_LABEL_LEN {
+			panic("too long label")
+		}
+		if result.Len() != 0 {
+			result.WriteRune('.')
+		}
 
-			for count > 0 {
-				count--
-				c := rune(name.raw[i])
-				i++
-				switch c {
-				case 0x22, 0x28, 0x29, 0x2E, 0x3B, 0x5C, 0x40, 0x24: //" ( ) . ; \\ @ $
-					result.WriteRune('\\')
+		for count > 0 {
+			count--
+			c := rune(name.raw[i])
+			i++
+			switch c {
+			case 0x22, 0x28, 0x29, 0x2E, 0x3B, 0x5C, 0x40, 0x24: //" ( ) . ; \\ @ $
+				result.WriteRune('\\')
+				result.WriteRune(c)
+			default:
+				if c > 0x20 && c < 0x7f {
 					result.WriteRune(c)
-				default:
-					if c > 0x20 && c < 0x7f {
-						result.WriteRune(c)
-					} else {
-						result.WriteRune(0x5c)
-						result.WriteRune(0x30 + ((c / 100) % 10))
-						result.WriteRune(0x30 + ((c / 10) % 10))
-						result.WriteRune(0x30 + (c % 10))
-					}
+				} else {
+					result.WriteRune(0x5c)
+					result.WriteRune(0x30 + ((c / 100) % 10))
+					result.WriteRune(0x30 + ((c / 10) % 10))
+					result.WriteRune(0x30 + (c % 10))
 				}
 			}
-		} else {
-			return "", errors.New("unknown label type")
 		}
 	}
-	return result.String(), nil
+	return result.String()
 }
 
 func min(n1 uint, n2 uint) uint {

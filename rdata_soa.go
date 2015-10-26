@@ -99,7 +99,7 @@ func SOAFromWire(buffer *util.InputBuffer, ll uint16) (*SOA, error) {
 	return &SOA{mname, rname, serial, refresh, retry, expire, minimum}, nil
 }
 
-func SOAFromStr(s string) (*SOA, error) {
+func SOAFromString(s string) (*SOA, error) {
 	fields := strings.Split(s, " ")
 	if len(fields) != 6 {
 		return nil, errors.New("short of fields for soa")

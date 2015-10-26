@@ -1,7 +1,9 @@
 package g53
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -357,18 +359,18 @@ func (t RRType) ToWire(buffer *util.OutputBuffer) {
 func (t RRType) String() string {
 	s := typeNameMap[t]
 	if s == "" {
-		return "unknowntype"
+		return fmt.Sprintf("unknowntype:%d", t)
 	} else {
 		return s
 	}
 }
 
 type RRset struct {
-	name    *Name
-	rrtype  RRType
-	rrclass RRClass
-	rrttl   RRTTL
-	rdatas  []Rdata
+	Name   *Name
+	Type   RRType
+	Class  RRClass
+	Ttl    RRTTL
+	Rdatas []Rdata
 }
 
 func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
@@ -397,5 +399,50 @@ func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
 		return nil, err
 	}
 
-	return &RRset{n, t, cls, ttl, []Rdata{rdata}}, nil
+	return &RRset{
+		Name:   n,
+		Type:   t,
+		Class:  cls,
+		Ttl:    ttl,
+		Rdatas: []Rdata{rdata},
+	}, nil
+}
+
+func (rrset *RRset) Rend(r *MsgRender) {
+	for _, rdata := range rrset.Rdatas {
+		rrset.Name.Rend(r)
+		rrset.Type.Rend(r)
+		rrset.Class.Rend(r)
+		rrset.Ttl.Rend(r)
+		pos := r.Len()
+		r.Skip(2)
+		rdata.Rend(r)
+		r.WriteUint16At(uint16(r.Len()-pos-2), pos)
+	}
+}
+
+func (rrset *RRset) ToWire(buffer *util.OutputBuffer) {
+	for _, rdata := range rrset.Rdatas {
+		rrset.Name.ToWire(buffer)
+		rrset.Type.ToWire(buffer)
+		rrset.Class.ToWire(buffer)
+		rrset.Ttl.ToWire(buffer)
+
+		pos := buffer.Len()
+		buffer.Skip(2)
+		rdata.ToWire(buffer)
+		buffer.WriteUint16At(uint16(buffer.Len()-pos-2), pos)
+	}
+}
+
+func (rrset *RRset) String() string {
+	header := strings.Join([]string{rrset.Name.String(false), rrset.Ttl.String(), rrset.Class.String(), rrset.Type.String()}, "\t")
+	var buf bytes.Buffer
+	for _, rdata := range rrset.Rdatas {
+		buf.WriteString(header)
+		buf.WriteString("\t")
+		buf.WriteString(rdata.String())
+		buf.WriteString("\n")
+	}
+	return buf.String()
 }

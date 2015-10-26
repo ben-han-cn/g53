@@ -35,7 +35,7 @@ func OPTFromWire(buffer *util.InputBuffer, ll uint16) (*OPT, error) {
 	}
 }
 
-func OPTFromStr(s string) (*OPT, error) {
+func OPTFromString(s string) (*OPT, error) {
 	f, err := fieldFromStr(RDF_D_HEX, s)
 	if err == nil {
 		d, _ := f.([]uint8)

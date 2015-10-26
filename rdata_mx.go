@@ -48,7 +48,7 @@ func MXFromWire(buffer *util.InputBuffer, ll uint16) (*MX, error) {
 	return &MX{preference, exchange}, nil
 }
 
-func MXFromStr(s string) (*MX, error) {
+func MXFromString(s string) (*MX, error) {
 	fields := strings.Split(s, " ")
 	if len(fields) != 2 {
 		return nil, errors.New("fields count for mx isn't 2")

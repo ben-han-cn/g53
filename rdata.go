@@ -2,6 +2,7 @@ package g53
 
 import (
 	"errors"
+	"fmt"
 
 	"g53/util"
 )
@@ -44,24 +45,24 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 	case RR_OPT:
 		return OPTFromWire(buffer, rdlen)
 	default:
-		return nil, errors.New("unimplement type")
+		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
 }
 
 func RdataFromStr(t RRType, s string) (Rdata, error) {
 	switch t {
 	case RR_A:
-		return AFromStr(s)
+		return AFromString(s)
 	case RR_AAAA:
-		return AAAAFromStr(s)
+		return AAAAFromString(s)
 	case RR_CNAME:
-		return CNameFromStr(s)
+		return CNameFromString(s)
 	case RR_SOA:
-		return SOAFromStr(s)
+		return SOAFromString(s)
 	case RR_NS:
-		return NSFromStr(s)
+		return NSFromString(s)
 	case RR_OPT:
-		return OPTFromStr(s)
+		return OPTFromString(s)
 	default:
 		return nil, errors.New("unimplement type")
 	}

@@ -1,7 +1,9 @@
 package g53
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 
 	"g53/util"
 )
@@ -30,26 +32,26 @@ func (hf HeaderFlag) GetFlag(ff FlagField) bool {
 	return (uint16(hf) & uint16(ff)) != 0
 }
 
-func (hf HeaderFlag) SetFlag(ff FlagField, set bool) {
+func (hf *HeaderFlag) SetFlag(ff FlagField, set bool) {
 	if set {
-		hf = HeaderFlag(uint16(hf) | uint16(ff))
+		*hf = HeaderFlag(uint16(*hf) | uint16(ff))
 	} else {
-		hf = HeaderFlag(uint16(hf) & uint16(^ff))
+		*hf = HeaderFlag(uint16(*hf) & uint16(^ff))
 	}
 }
 
-type MsgHeader struct {
+type Header struct {
 	Id      uint16
 	Flag    HeaderFlag
-	Op      Opcode
-	Rc      Rcode
+	Opcode  Opcode
+	Rcode   Rcode
 	QDCount uint16
 	ANCount uint16
 	NSCount uint16
 	ARCount uint16
 }
 
-func MsgHeaderFromWire(buffer *util.InputBuffer) (*MsgHeader, error) {
+func HeaderFromWire(buffer *util.InputBuffer) (*Header, error) {
 	if buffer.Len() < 12 {
 		return nil, errors.New("too short wire data for message header")
 	}
@@ -59,11 +61,11 @@ func MsgHeaderFromWire(buffer *util.InputBuffer) (*MsgHeader, error) {
 	ancount, _ := buffer.ReadUint16()
 	nscount, _ := buffer.ReadUint16()
 	arcount, _ := buffer.ReadUint16()
-	return &MsgHeader{
+	return &Header{
 		Id:      id,
 		Flag:    HeaderFlag(flag & HEADERFLAG_MASK),
-		Op:      Opcode((flag & OPCODE_MASK) >> OPCODE_SHIFT),
-		Rc:      Rcode(flag & RCODE_MASK),
+		Opcode:  Opcode((flag & OPCODE_MASK) >> OPCODE_SHIFT),
+		Rcode:   Rcode(flag & RCODE_MASK),
 		QDCount: qdcount,
 		ANCount: ancount,
 		NSCount: nscount,
@@ -71,18 +73,68 @@ func MsgHeaderFromWire(buffer *util.InputBuffer) (*MsgHeader, error) {
 	}, nil
 }
 
-func (h *MsgHeader) Rend(r *MsgRender) {
+func (h *Header) Rend(r *MsgRender) {
 	r.WriteUint16(h.Id)
-	flag := (uint16(h.Op) << OPCODE_SHIFT) & OPCODE_MASK
-	flag |= uint16(h.Rc) & RCODE_MASK
-	flag |= uint16(h.Flag) | HEADERFLAG_MASK
-	r.WriteUint16(flag)
+	r.WriteUint16(h.flag())
 	r.WriteUint16(h.QDCount)
 	r.WriteUint16(h.ANCount)
 	r.WriteUint16(h.NSCount)
 	r.WriteUint16(h.ARCount)
 }
 
-func (h *MsgHeader) String() string {
-	return ""
+func (h *Header) flag() uint16 {
+	flag := (uint16(h.Opcode) << OPCODE_SHIFT) & OPCODE_MASK
+	flag |= uint16(h.Rcode) & RCODE_MASK
+	flag |= uint16(h.Flag) & HEADERFLAG_MASK
+	return flag
+}
+
+func (h *Header) ToWire(buffer *util.OutputBuffer) {
+	buffer.WriteUint16(h.Id)
+	buffer.WriteUint16(h.flag())
+	buffer.WriteUint16(h.QDCount)
+	buffer.WriteUint16(h.ANCount)
+	buffer.WriteUint16(h.NSCount)
+	buffer.WriteUint16(h.ARCount)
+}
+
+func (h *Header) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n", h.Opcode.String(), h.Rcode.String(), h.Id))
+	buf.WriteString(";; flags: ")
+	if h.Flag.GetFlag(FLAG_QR) {
+		buf.WriteString("qr ")
+	}
+
+	if h.Flag.GetFlag(FLAG_AA) {
+		buf.WriteString("aa ")
+	}
+
+	if h.Flag.GetFlag(FLAG_TC) {
+		buf.WriteString("tc ")
+	}
+
+	if h.Flag.GetFlag(FLAG_RD) {
+		buf.WriteString("rd ")
+	}
+
+	if h.Flag.GetFlag(FLAG_RA) {
+		buf.WriteString("ra ")
+	}
+
+	if h.Flag.GetFlag(FLAG_AD) {
+		buf.WriteString("ad ")
+	}
+
+	if h.Flag.GetFlag(FLAG_CD) {
+		buf.WriteString("cd ")
+	}
+	buf.WriteString("; ")
+
+	buf.WriteString(fmt.Sprintf("QUERY: %d, ", h.QDCount))
+	buf.WriteString(fmt.Sprintf("ANSWER: %d, ", h.ANCount))
+	buf.WriteString(fmt.Sprintf("AUTHORITY: %d, ", h.NSCount))
+	buf.WriteString(fmt.Sprintf("ADDITIONAL: %d, ", h.ARCount))
+	buf.WriteString("\n")
+	return buf.String()
 }

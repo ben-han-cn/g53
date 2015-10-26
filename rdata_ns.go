@@ -34,7 +34,7 @@ func NSFromWire(buffer *util.InputBuffer, ll uint16) (*NS, error) {
 	}
 }
 
-func NSFromStr(s string) (*NS, error) {
+func NSFromString(s string) (*NS, error) {
 	n, err := fieldFromStr(RDF_D_NAME, s)
 	if err == nil {
 		name, _ := n.(*Name)

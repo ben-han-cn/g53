@@ -35,7 +35,7 @@ func AAAAFromWire(buffer *util.InputBuffer, ll uint16) (*AAAA, error) {
 	}
 }
 
-func AAAAFromStr(s string) (*AAAA, error) {
+func AAAAFromString(s string) (*AAAA, error) {
 	f, err := fieldFromStr(RDF_D_IP, s)
 	if err == nil {
 		host, _ := f.(net.IP)
