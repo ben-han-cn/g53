@@ -6,13 +6,8 @@ import (
 )
 
 func buildHeader(id uint16, setFlag []FlagField, counts []uint16, opcode Opcode, rcode Rcode) *Header {
-	var hf HeaderFlag
-	for _, f := range setFlag {
-		(&hf).SetFlag(f, true)
-	}
-	return &Header{
+	h := &Header{
 		Id:      id,
-		Flag:    hf,
 		Opcode:  opcode,
 		Rcode:   rcode,
 		QDCount: counts[0],
@@ -20,6 +15,12 @@ func buildHeader(id uint16, setFlag []FlagField, counts []uint16, opcode Opcode,
 		NSCount: counts[2],
 		ARCount: counts[3],
 	}
+
+	for _, f := range setFlag {
+		h.SetFlag(f, true)
+	}
+
+	return h
 }
 
 func matchMessageRaw(t *testing.T, rawData string, m *Message) {

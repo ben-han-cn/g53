@@ -28,18 +28,6 @@ const (
 	RCODE_MASK             = 0x000f
 )
 
-func (hf HeaderFlag) GetFlag(ff FlagField) bool {
-	return (uint16(hf) & uint16(ff)) != 0
-}
-
-func (hf *HeaderFlag) SetFlag(ff FlagField, set bool) {
-	if set {
-		*hf = HeaderFlag(uint16(*hf) | uint16(ff))
-	} else {
-		*hf = HeaderFlag(uint16(*hf) & uint16(^ff))
-	}
-}
-
 type Header struct {
 	Id      uint16
 	Flag    HeaderFlag
@@ -49,6 +37,18 @@ type Header struct {
 	ANCount uint16
 	NSCount uint16
 	ARCount uint16
+}
+
+func (h *Header) GetFlag(ff FlagField) bool {
+	return (uint16(h.Flag) & uint16(ff)) != 0
+}
+
+func (h *Header) SetFlag(ff FlagField, set bool) {
+	if set {
+		h.Flag = HeaderFlag(uint16(h.Flag) | uint16(ff))
+	} else {
+		h.Flag = HeaderFlag(uint16(h.Flag) & uint16(^ff))
+	}
 }
 
 func HeaderFromWire(buffer *util.InputBuffer) (*Header, error) {
@@ -102,31 +102,31 @@ func (h *Header) String() string {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n", h.Opcode.String(), h.Rcode.String(), h.Id))
 	buf.WriteString(";; flags: ")
-	if h.Flag.GetFlag(FLAG_QR) {
+	if h.GetFlag(FLAG_QR) {
 		buf.WriteString("qr ")
 	}
 
-	if h.Flag.GetFlag(FLAG_AA) {
+	if h.GetFlag(FLAG_AA) {
 		buf.WriteString("aa ")
 	}
 
-	if h.Flag.GetFlag(FLAG_TC) {
+	if h.GetFlag(FLAG_TC) {
 		buf.WriteString("tc ")
 	}
 
-	if h.Flag.GetFlag(FLAG_RD) {
+	if h.GetFlag(FLAG_RD) {
 		buf.WriteString("rd ")
 	}
 
-	if h.Flag.GetFlag(FLAG_RA) {
+	if h.GetFlag(FLAG_RA) {
 		buf.WriteString("ra ")
 	}
 
-	if h.Flag.GetFlag(FLAG_AD) {
+	if h.GetFlag(FLAG_AD) {
 		buf.WriteString("ad ")
 	}
 
-	if h.Flag.GetFlag(FLAG_CD) {
+	if h.GetFlag(FLAG_CD) {
 		buf.WriteString("cd ")
 	}
 	buf.WriteString("; ")

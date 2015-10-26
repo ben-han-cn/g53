@@ -46,8 +46,8 @@ func (buf *InputBuffer) ReadUint16() (uint16, error) {
 	}
 
 	p := buf.pos
-	short := buf.data[p] << 8
-	short |= buf.data[p+1]
+	short := uint16(buf.data[p]) << 8
+	short |= uint16(buf.data[p+1])
 	buf.pos += 2
 	return uint16(short), nil
 }
@@ -58,12 +58,12 @@ func (buf *InputBuffer) ReadUint32() (uint32, error) {
 	}
 
 	p := buf.pos
-	i := uint(buf.data[p]) << 24
-	i |= uint(buf.data[p+1]) << 16
-	i |= uint(buf.data[p+2]) << 8
-	i |= uint(buf.data[p+3])
+	i := uint32(buf.data[p]) << 24
+	i |= uint32(buf.data[p+1]) << 16
+	i |= uint32(buf.data[p+2]) << 8
+	i |= uint32(buf.data[p+3])
 	buf.pos += 4
-	return uint32(i), nil
+	return i, nil
 }
 
 func (buf *InputBuffer) ReadBytes(length uint) ([]byte, error) {
@@ -110,6 +110,9 @@ func (out *OutputBuffer) At(pos uint) (uint8, error) {
 func (out *OutputBuffer) Skip(length uint) {
 	l := out.Len() + length
 	out.ensureSpace(l)
+	for cl := out.Len(); cl < l; cl++ {
+		out.data = append(out.data, 0)
+	}
 }
 
 func (out *OutputBuffer) Trim(length uint) error {
