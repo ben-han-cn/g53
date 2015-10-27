@@ -49,6 +49,21 @@ func EdnsFromWire(buffer *util.InputBuffer) (*EDNS, error) {
 	}, nil
 }
 
+func EdnsFromRRset(rrset *RRset) *EDNS {
+	util.Assert(rrset.Type == RR_OPT, "edns should generate from otp")
+	udpSize := uint16(rrset.Class)
+	flags := uint32(rrset.Ttl)
+	dnssecAware := (flags & EXTFLAG_DO) != 0
+	extendedRcode := uint8(flags >> EXTRCODE_SHIFT)
+	version := uint8((flags & VERSION_MASK) >> VERSION_SHIFT)
+	return &EDNS{
+		Version:       version,
+		extendedRcode: extendedRcode,
+		UdpSize:       udpSize,
+		DnssecAware:   dnssecAware,
+	}
+}
+
 func (e *EDNS) Rend(r *MsgRender) {
 	flags := uint32(e.extendedRcode) << EXTRCODE_SHIFT
 	flags |= (uint32(e.Version) << VERSION_SHIFT) & VERSION_MASK

@@ -14,11 +14,11 @@ func WireMatch(t *testing.T, expectData []uint8, actualData []uint8) {
 	}
 
 	minLen := int(math.Min(float64(len(expectData)), float64(len(actualData))))
+	_, file, line, _ := runtime.Caller(1)
 	for i := 0; i < minLen; i++ {
 		if expectData[i] != actualData[i] {
-			t.Errorf("match part %v", expectData[:i])
-			t.Errorf("right:%v", expectData[i:])
-			t.Errorf("wrong:%v", actualData[i:])
+			t.Logf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n",
+				filepath.Base(file), line, expectData[i:], actualData[i:])
 			break
 		}
 	}
@@ -27,7 +27,9 @@ func WireMatch(t *testing.T, expectData []uint8, actualData []uint8) {
 func NameEqToStr(t *testing.T, n *Name, str string) {
 	s, _ := NewName(str, true)
 	if n.Equals(s) == false {
-		t.Errorf("expect name %v but get %v\n", str, n.String(true))
+		_, file, line, _ := runtime.Caller(1)
+		t.Logf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n",
+			filepath.Base(file), line, str, n.String(true))
 	}
 }
 

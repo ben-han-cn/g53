@@ -23,7 +23,7 @@ const (
 	RDF_C_IPV4
 	RDF_C_IPV6
 	RDF_C_BINARY
-	RDF_C_BYTE_BINARY
+	RDF_C_BYTE_BINARY //<character-string>
 	RDF_C_TXT
 )
 

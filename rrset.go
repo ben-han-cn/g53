@@ -338,7 +338,7 @@ func TypeFromWire(buffer *util.InputBuffer) (RRType, error) {
 	return RRType(t), nil
 }
 
-func TypeFromStr(s string) (RRType, error) {
+func TypeFromString(s string) (RRType, error) {
 	s = strings.ToLower(s)
 	for t, ts := range typeNameMap {
 		if ts == s {
@@ -445,4 +445,12 @@ func (rrset *RRset) String() string {
 		buf.WriteString("\n")
 	}
 	return buf.String()
+}
+
+func (rrset *RRset) RrCount() int {
+	return len(rrset.Rdatas)
+}
+
+func (rrset *RRset) AddRdata(rdata Rdata) {
+	rrset.Rdatas = append(rrset.Rdatas, rdata)
 }

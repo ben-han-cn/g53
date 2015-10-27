@@ -39,6 +39,14 @@ type Header struct {
 	ARCount uint16
 }
 
+func (h *Header) Clear() {
+	h.Flag = 0
+	h.QDCount = 0
+	h.ANCount = 0
+	h.NSCount = 0
+	h.ARCount = 0
+}
+
 func (h *Header) GetFlag(ff FlagField) bool {
 	return (uint16(h.Flag) & uint16(ff)) != 0
 }
@@ -103,31 +111,31 @@ func (h *Header) String() string {
 	buf.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n", h.Opcode.String(), h.Rcode.String(), h.Id))
 	buf.WriteString(";; flags: ")
 	if h.GetFlag(FLAG_QR) {
-		buf.WriteString("qr ")
+		buf.WriteString(" qr")
 	}
 
 	if h.GetFlag(FLAG_AA) {
-		buf.WriteString("aa ")
+		buf.WriteString(" aa")
 	}
 
 	if h.GetFlag(FLAG_TC) {
-		buf.WriteString("tc ")
+		buf.WriteString(" tc")
 	}
 
 	if h.GetFlag(FLAG_RD) {
-		buf.WriteString("rd ")
+		buf.WriteString(" rd")
 	}
 
 	if h.GetFlag(FLAG_RA) {
-		buf.WriteString("ra ")
+		buf.WriteString(" ra")
 	}
 
 	if h.GetFlag(FLAG_AD) {
-		buf.WriteString("ad ")
+		buf.WriteString(" ad")
 	}
 
 	if h.GetFlag(FLAG_CD) {
-		buf.WriteString("cd ")
+		buf.WriteString(" cd")
 	}
 	buf.WriteString("; ")
 

@@ -36,6 +36,7 @@ func matchMessageRaw(t *testing.T, rawData string, m *Message) {
 	matchSection(t, nm.GetSection(AdditionalSection), m.GetSection(AdditionalSection))
 
 	render := NewMsgRender()
+	nm.Mode = RENDER
 	nm.Rend(render)
 	WireMatch(t, wire, render.Data())
 }

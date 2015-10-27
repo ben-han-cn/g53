@@ -44,6 +44,12 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 		return NSFromWire(buffer, rdlen)
 	case RR_OPT:
 		return OPTFromWire(buffer, rdlen)
+	case RR_PTR:
+		return PTRFromWire(buffer, rdlen)
+	case RR_SRV:
+		return SRVFromWire(buffer, rdlen)
+	case RR_NAPTR:
+		return NAPTRFromWire(buffer, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
@@ -63,6 +69,12 @@ func RdataFromStr(t RRType, s string) (Rdata, error) {
 		return NSFromString(s)
 	case RR_OPT:
 		return OPTFromString(s)
+	case RR_PTR:
+		return PTRFromString(s)
+	case RR_SRV:
+		return SRVFromString(s)
+	case RR_NAPTR:
+		return NAPTRFromString(s)
 	default:
 		return nil, errors.New("unimplement type")
 	}
