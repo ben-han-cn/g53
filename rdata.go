@@ -50,6 +50,8 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 		return SRVFromWire(buffer, rdlen)
 	case RR_NAPTR:
 		return NAPTRFromWire(buffer, rdlen)
+	case RR_RRSIG:
+		return RRSigFromWire(buffer, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
@@ -75,6 +77,8 @@ func RdataFromStr(t RRType, s string) (Rdata, error) {
 		return SRVFromString(s)
 	case RR_NAPTR:
 		return NAPTRFromString(s)
+	case RR_RRSIG:
+		return RRSigFromString(s)
 	default:
 		return nil, errors.New("unimplement type")
 	}
