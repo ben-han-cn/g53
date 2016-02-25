@@ -1,7 +1,7 @@
 package g53
 
 import (
-	"errors"
+	"fmt"
 
 	"g53/util"
 )
@@ -28,7 +28,7 @@ func OPTFromWire(buffer *util.InputBuffer, ll uint16) (*OPT, error) {
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return nil, fmt.Errorf("extra data %d in opt rdata part", ll)
 	} else {
 		d, _ := f.([]uint8)
 		return &OPT{d}, nil

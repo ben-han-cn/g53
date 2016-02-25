@@ -1,6 +1,8 @@
 package g53
 
 import (
+	"fmt"
+
 	"g53/util"
 	"testing"
 )
@@ -25,6 +27,7 @@ func buildHeader(id uint16, setFlag []FlagField, counts []uint16, opcode Opcode,
 
 func matchMessageRaw(t *testing.T, rawData string, m *Message) {
 	wire, _ := util.HexStrToBytes(rawData)
+	fmt.Printf("message raw is: %s\n", util.BytesToElixirStr(wire))
 	buffer := util.NewInputBuffer(wire)
 	nm, err := MessageFromWire(buffer)
 	Assert(t, err == nil, "err should be nil")

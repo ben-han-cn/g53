@@ -14,3 +14,11 @@ func HexStrToBytes(s string) (result []uint8, err error) {
 	}
 	return
 }
+
+func BytesToElixirStr(bytes []uint8) string {
+	str := "<<"
+	for _, b := range bytes {
+		str += strconv.Itoa(int(b)) + ","
+	}
+	return str + ">>"
+}

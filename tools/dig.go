@@ -9,13 +9,15 @@ import (
 )
 
 var (
-	port int
-	typ  string
+	port   int
+	typ    string
+	subnet string
 )
 
 func init() {
 	flag.IntVar(&port, "p", 53, "dns server port default to 53")
 	flag.StringVar(&typ, "t", "a", "query type")
+	flag.StringVar(&subnet, "s", "127.0.0.1", "subnet")
 }
 
 func main() {
@@ -43,12 +45,15 @@ func main() {
 	if err != nil {
 		panic("invalid type to query:" + err.Error())
 	}
-	msg := g53.MakeQuery(qn, qtype, 1024, true)
+	msg := g53.MakeQuery(qn, qtype, 4096, false)
 	msg.Header.Id = 1200
+	//msg.Edns.AddSubnetV4(subnet)
 
 	render := g53.NewMsgRender()
 	msg.Rend(render)
 	conn.Write(render.Data())
+	fmt.Printf("%s\n", util.BytesToElixirStr(render.Data()))
+	fmt.Printf(msg.String())
 
 	answerBuffer := make([]byte, 1024)
 	n, _, err := conn.ReadFromUDP(answerBuffer)
