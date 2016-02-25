@@ -2,6 +2,7 @@ package g53
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -453,4 +454,18 @@ func (rrset *RRset) RrCount() int {
 
 func (rrset *RRset) AddRdata(rdata Rdata) {
 	rrset.Rdatas = append(rrset.Rdatas, rdata)
+}
+
+func (rrset *RRset) MarshalJSON() ([]byte, error) {
+	rrs := []map[string]interface{}{}
+	for _, rdata := range rrset.Rdatas {
+		rrs = append(rrs, map[string]interface{}{
+			"name":  rrset.Name.String(true),
+			"type":  rrset.Type.String(),
+			"class": rrset.Class.String(),
+			"ttl":   rrset.Ttl,
+			"rdata": rdata.String(),
+		})
+	}
+	return json.Marshal(rrs)
 }
