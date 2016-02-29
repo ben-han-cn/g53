@@ -54,6 +54,8 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 		return RRSigFromWire(buffer, rdlen)
 	case RR_MX:
 		return MXFromWire(buffer, rdlen)
+	case RR_TXT:
+		return TxtFromWire(buffer, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
@@ -83,6 +85,8 @@ func RdataFromStr(t RRType, s string) (Rdata, error) {
 		return RRSigFromString(s)
 	case RR_MX:
 		return MXFromString(s)
+	case RR_TXT:
+		return TxtFromString(s)
 	default:
 		return nil, errors.New("unimplement type")
 	}

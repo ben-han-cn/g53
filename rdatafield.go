@@ -279,7 +279,7 @@ func fieldToStr(dt RDFDisplayType, d interface{}) string {
 		return ip.String()
 	case RDF_D_TXT:
 		ss, _ := d.([]string)
-		return strings.Join(ss, " ")
+		return "\"" + strings.Join(ss, " ") + "\""
 	case RDF_D_HEX:
 		bs, _ := d.([]uint8)
 		s := ""

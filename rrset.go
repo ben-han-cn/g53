@@ -362,7 +362,7 @@ func (t RRType) String() string {
 	if s == "" {
 		return fmt.Sprintf("unknowntype:%d", t)
 	} else {
-		return s
+		return strings.ToUpper(s)
 	}
 }
 

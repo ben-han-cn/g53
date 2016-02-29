@@ -48,5 +48,5 @@ func (q *Question) ToWire(buffer *util.OutputBuffer) {
 }
 
 func (q *Question) String() string {
-	return strings.Join([]string{q.Name.String(false), q.Type.String(), q.Class.String()}, " ")
+	return strings.Join([]string{q.Name.String(false), q.Class.String(), q.Type.String()}, " ")
 }
