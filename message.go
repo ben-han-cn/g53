@@ -16,15 +16,8 @@ const (
 const SectionCount = 3
 
 type Section []*RRset
-type Mode int
-
-const (
-	PARSE  Mode = 1
-	RENDER      = 2
-)
 
 type Message struct {
-	Mode     Mode
 	Header   *Header
 	Question *Question
 	Sections [SectionCount]Section
@@ -43,7 +36,6 @@ func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
 	}
 
 	return &Message{
-		Mode:     RENDER,
 		Header:   h,
 		Question: q,
 		Edns: &EDNS{
@@ -68,7 +60,6 @@ func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
 	}
 
 	m := &Message{
-		Mode:     PARSE,
 		Header:   h,
 		Question: q,
 	}
@@ -112,7 +103,6 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 }
 
 func (m *Message) Rend(r *MsgRender) {
-	util.Assert(m.Mode == RENDER, "message isn't on render mode")
 	if m.Question == nil {
 		m.Header.QDCount = 0
 	} else {
@@ -209,8 +199,7 @@ func (m *Message) GetSection(st SectionType) Section {
 	return m.Sections[st]
 }
 
-func (m *Message) Clear(mode Mode) {
-	m.Mode = RENDER
+func (m *Message) Clear() {
 	m.Header.Clear()
 	m.Question = nil
 	for i := 0; i < SectionCount; i++ {
@@ -219,12 +208,10 @@ func (m *Message) Clear(mode Mode) {
 }
 
 func (m *Message) AddRRset(st SectionType, rrset *RRset) {
-	util.Assert(m.Mode == RENDER, "message should in render mode")
 	m.Sections[st] = append(m.Sections[st], rrset)
 }
 
 func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, rdata Rdata, merge bool) {
-	util.Assert(m.Mode == RENDER, "message should in render mode")
 	if merge {
 		if i := m.rrsetIndex(st, name, typ, class); i != -1 {
 			m.Sections[st][i].AddRdata(rdata)
@@ -260,9 +247,6 @@ func (m *Message) HasRRsetWithNameType(st SectionType, n *Name, t RRType) bool {
 }
 
 func (m *Message) MakeResponse() {
-	util.Assert(m.Mode == PARSE, "MakeResponse is performed on render mode")
-
-	m.Mode = RENDER
 	m.Header.SetFlag(FLAG_RD|FLAG_CD|FLAG_QR, true)
 	m.Header.ANCount = 0
 	m.Header.NSCount = 0
@@ -273,6 +257,5 @@ func (m *Message) MakeResponse() {
 }
 
 func (m *Message) ClearSection(s SectionType) {
-	util.Assert(m.Mode == RENDER, "clear seciton should call on render mode")
 	m.Sections[s] = nil
 }

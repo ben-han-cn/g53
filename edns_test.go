@@ -11,7 +11,7 @@ func matchEdns(t *testing.T, rawData string, expectEdns EDNS) {
 	buffer := util.NewInputBuffer(edns_wire)
 	edns, err := EdnsFromWire(buffer)
 	Assert(t, err == nil, "wire data is valid")
-	Assert(t, *edns == expectEdns, "edns should match")
+	Assert(t, edns.String() == expectEdns.String(), "edns should match")
 
 	render := NewMsgRender()
 	edns.Rend(render)
