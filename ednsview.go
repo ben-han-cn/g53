@@ -15,8 +15,6 @@ type ViewOpt struct {
 
 func (vo *ViewOpt) Rend(render *MsgRender) {
 	render.WriteUint16(EDNS_VIEW)
-	viewLen := len(vo.view)
-	render.WriteUint16(uint16(1 + viewLen))
 	render.WriteUint16(uint16(len(vo.view)))
 	render.WriteData([]byte(vo.view))
 }
