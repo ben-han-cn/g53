@@ -445,9 +445,9 @@ func (name *Name) String(omitFinalDot bool) string {
 
 func min(n1 uint, n2 uint) uint {
 	if n1 > n2 {
-		return n1
-	} else {
 		return n2
+	} else {
+		return n1
 	}
 }
 

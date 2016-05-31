@@ -58,6 +58,11 @@ func TestNameConcat(t *testing.T) {
 		t.Errorf("down case failed:%v", knetmixcase)
 	}
 
+	baidu_com, _ := NewName("baidu.com.", true)
+	www_baidu_com, _ := NewName("www.baidu.com", true)
+	if cr := baidu_com.Compare(www_baidu_com, true); cr.Relation != SUPERDOMAIN {
+		t.Errorf("baidu.com is www.baidu.com's superdomain but get %v", cr.Relation)
+	}
 }
 
 func TestNameStrip(t *testing.T) {
