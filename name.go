@@ -643,6 +643,10 @@ func (name *Name) StripLeft(c uint) (*Name, error) {
 		return nil, errors.New("strip too many labels")
 	}
 
+	if c == 0 {
+		return name, nil
+	}
+
 	startPos := name.offsets[c]
 	newLabelCount := name.labelCount - c
 	offsets := make([]byte, newLabelCount)
@@ -657,6 +661,10 @@ func (name *Name) StripLeft(c uint) (*Name, error) {
 func (name *Name) StripRight(c uint) (*Name, error) {
 	if c >= name.labelCount {
 		return nil, errors.New("strip too many labels")
+	}
+
+	if c == 0 {
+		return name, nil
 	}
 
 	labelIndex := name.labelCount - c - 1

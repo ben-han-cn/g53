@@ -452,6 +452,10 @@ func (rrset *RRset) RrCount() int {
 	return len(rrset.Rdatas)
 }
 
+func (rrset *RRset) IsSameRrset(other *RRset) bool {
+	return (rrset.Type == other.Type) && rrset.Name.Equals(other.Name)
+}
+
 func (rrset *RRset) AddRdata(rdata Rdata) {
 	rrset.Rdatas = append(rrset.Rdatas, rdata)
 }

@@ -1,6 +1,7 @@
 package g53
 
 import (
+	"fmt"
 	"g53/util"
 	"testing"
 )
@@ -17,7 +18,7 @@ func matchRRsetRaw(t *testing.T, rawData string, rs *RRset) {
 }
 
 func matchRRset(t *testing.T, nrs *RRset, rs *RRset) {
-	Assert(t, nrs.Name.Equals(rs.Name), "name should equal")
+	Assert(t, nrs.Name.Equals(rs.Name), fmt.Sprintf("%s != %s", nrs.Name.String(false), rs.Name.String(false)))
 	Equal(t, nrs.Type, rs.Type)
 	Equal(t, nrs.Class, rs.Class)
 	Equal(t, len(nrs.Rdatas), len(rs.Rdatas))

@@ -85,16 +85,35 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 		count = m.Header.ARCount
 	}
 
+	var lastRrset *RRset
 	for i := uint16(0); i < count; i++ {
 		rrset, err := RRsetFromWire(buffer)
 		if err != nil {
 			return err
 		}
 
-		if st == AdditionalSection && rrset.Type == RR_OPT {
-			m.Edns = EdnsFromRRset(rrset)
+		if lastRrset == nil {
+			lastRrset = rrset
+			continue
+		}
+
+		if lastRrset.IsSameRrset(rrset) {
+			lastRrset.Rdatas = append(lastRrset.Rdatas, rrset.Rdatas[0])
 		} else {
-			s = append(s, rrset)
+			if st == AdditionalSection && lastRrset.Type == RR_OPT {
+				m.Edns = EdnsFromRRset(lastRrset)
+			} else {
+				s = append(s, lastRrset)
+			}
+			lastRrset = rrset
+		}
+	}
+
+	if lastRrset != nil {
+		if st == AdditionalSection && lastRrset.Type == RR_OPT {
+			m.Edns = EdnsFromRRset(lastRrset)
+		} else {
+			s = append(s, lastRrset)
 		}
 	}
 
