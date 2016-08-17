@@ -265,14 +265,21 @@ func (m *Message) HasRRsetWithNameType(st SectionType, n *Name, t RRType) bool {
 	return false
 }
 
-func (m *Message) MakeResponse() {
-	m.Header.SetFlag(FLAG_RD|FLAG_CD|FLAG_QR, true)
-	m.Header.ANCount = 0
-	m.Header.NSCount = 0
-	m.Header.ARCount = 0
-	m.Sections[AnswerSection] = nil
-	m.Sections[AuthSection] = nil
-	m.Sections[AdditionalSection] = nil
+func (m *Message) MakeResponse() *Message {
+	h := &Header{
+		Id:      m.Header.Id,
+		Opcode:  OP_QUERY,
+		QDCount: m.Header.QDCount,
+	}
+
+	h.SetFlag(FLAG_QR, true)
+	h.SetFlag(FLAG_RD, m.Header.GetFlag(FLAG_RD))
+
+	return &Message{
+		Header:   h,
+		Question: m.Question,
+		Edns:     m.Edns,
+	}
 }
 
 func (m *Message) ClearSection(s SectionType) {
