@@ -460,6 +460,15 @@ func (rrset *RRset) AddRdata(rdata Rdata) {
 	rrset.Rdatas = append(rrset.Rdatas, rdata)
 }
 
+func (rrset *RRset) RotateRdata() {
+	rrCount := rrset.RrCount()
+	if rrCount < 2 {
+		return
+	}
+
+	rrset.Rdatas = append([]Rdata{rrset.Rdatas[rrCount-1]}, rrset.Rdatas[0:rrCount-1]...)
+}
+
 func (rrset *RRset) MarshalJSON() ([]byte, error) {
 	rrs := []map[string]interface{}{}
 	for _, rdata := range rrset.Rdatas {
