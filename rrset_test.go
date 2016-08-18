@@ -55,6 +55,13 @@ func TestRRsetRoateRdata(t *testing.T) {
 	Equal(t, rrset.Rdatas[0].String(), ra1.String())
 
 	rrset.AddRdata(ra2)
+	rrset.RotateRdata()
+	Equal(t, rrset.Rdatas[0].String(), ra2.String())
+	Equal(t, rrset.Rdatas[1].String(), ra1.String())
+	rrset.RotateRdata()
+	Equal(t, rrset.Rdatas[0].String(), ra1.String())
+	Equal(t, rrset.Rdatas[1].String(), ra2.String())
+
 	rrset.AddRdata(ra3)
 	rrset.RotateRdata()
 	Equal(t, rrset.Rdatas[0].String(), ra3.String())
