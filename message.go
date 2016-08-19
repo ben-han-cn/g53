@@ -17,6 +17,14 @@ const SectionCount = 3
 
 type Section []*RRset
 
+func (section Section) rrCount() int {
+	count := 0
+	for _, rrset := range section {
+		count += rrset.RrCount()
+	}
+	return count
+}
+
 type Message struct {
 	Header   *Header
 	Question *Question
@@ -128,9 +136,9 @@ func (m *Message) Rend(r *MsgRender) {
 		m.Header.QDCount = 1
 	}
 
-	m.Header.ANCount = uint16(len(m.Sections[AnswerSection]))
-	m.Header.NSCount = uint16(len(m.Sections[AuthSection]))
-	m.Header.ARCount = uint16(len(m.Sections[AdditionalSection]))
+	m.Header.ANCount = uint16(m.Sections[AnswerSection].rrCount())
+	m.Header.NSCount = uint16(m.Sections[AuthSection].rrCount())
+	m.Header.ARCount = uint16(m.Sections[AdditionalSection].rrCount())
 	if m.Edns != nil {
 		m.Header.ARCount += 1
 	}
