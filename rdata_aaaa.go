@@ -31,7 +31,7 @@ func AAAAFromWire(buffer *util.InputBuffer, ll uint16) (*AAAA, error) {
 		return nil, errors.New("extra data in rdata part")
 	} else {
 		host, _ := f.(net.IP)
-		return &AAAA{host}, nil
+		return &AAAA{host.To16()}, nil
 	}
 }
 

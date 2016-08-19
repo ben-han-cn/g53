@@ -28,7 +28,7 @@ func AFromWire(buffer *util.InputBuffer, ll uint16) (*A, error) {
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return nil, errors.New("extra data in a rdata part")
 	} else {
 		host, _ := f.(net.IP)
 		return &A{host}, nil
@@ -39,7 +39,7 @@ func AFromString(s string) (*A, error) {
 	f, err := fieldFromStr(RDF_D_IP, s)
 	if err == nil {
 		host, _ := f.(net.IP)
-		return &A{host}, nil
+		return &A{host.To4()}, nil
 	} else {
 		return nil, err
 	}
