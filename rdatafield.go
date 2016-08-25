@@ -153,10 +153,8 @@ func rendField(ct RDFCodingType, data interface{}, render *MsgRender) {
 	case RDF_C_TXT:
 		ds, _ := data.([]string)
 		for _, d := range ds {
-			rendField(RDF_C_BYTE_BINARY, d, render)
+			rendField(RDF_C_BYTE_BINARY, []uint8(d), render)
 		}
-		d, _ := data.([]uint8)
-		render.WriteData(d)
 	case RDF_C_BYTE_BINARY:
 		d, _ := data.([]uint8)
 		render.WriteUint8(uint8(len(d)))

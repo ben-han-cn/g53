@@ -291,4 +291,15 @@ func (m *Message) MakeResponse() *Message {
 
 func (m *Message) ClearSection(s SectionType) {
 	m.Sections[s] = nil
+	switch s {
+	case AnswerSection:
+		m.Header.ANCount = 0
+	case AuthSection:
+		m.Header.NSCount = 0
+	case AdditionalSection:
+		m.Edns = nil
+		m.Header.ARCount = 0
+	default:
+		panic("question section couldn't be cleared")
+	}
 }
