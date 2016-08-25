@@ -17,6 +17,7 @@ type RDFDisplayType uint8
 
 const (
 	RDF_C_NAME RDFCodingType = iota
+	RDF_C_NAME_UNCOMPRESS
 	RDF_C_UINT8
 	RDF_C_UINT16
 	RDF_C_UINT32
@@ -40,7 +41,7 @@ const (
 
 func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (interface{}, uint16, error) {
 	switch ct {
-	case RDF_C_NAME:
+	case RDF_C_NAME, RDF_C_NAME_UNCOMPRESS:
 		pos := buffer.Position()
 		n, err := NameFromWire(buffer, true)
 		if err != nil {
@@ -135,26 +136,37 @@ func rendField(ct RDFCodingType, data interface{}, render *MsgRender) {
 	case RDF_C_NAME:
 		n, _ := data.(*Name)
 		n.Rend(render)
+
+	case RDF_C_NAME_UNCOMPRESS:
+		n, _ := data.(*Name)
+		render.WriteName(n, false)
+
 	case RDF_C_UINT8:
 		d, _ := data.(uint8)
 		render.WriteUint8(d)
+
 	case RDF_C_UINT16:
 		d, _ := data.(uint16)
 		render.WriteUint16(d)
+
 	case RDF_C_UINT32:
 		d, _ := data.(uint32)
 		render.WriteUint32(d)
+
 	case RDF_C_IPV4, RDF_C_IPV6:
 		d, _ := data.(net.IP)
 		render.WriteData([]uint8(d))
+
 	case RDF_C_BINARY:
 		d, _ := data.([]uint8)
 		render.WriteData(d)
+
 	case RDF_C_TXT:
 		ds, _ := data.([]string)
 		for _, d := range ds {
 			rendField(RDF_C_BYTE_BINARY, []uint8(d), render)
 		}
+
 	case RDF_C_BYTE_BINARY:
 		d, _ := data.([]uint8)
 		render.WriteUint8(uint8(len(d)))
@@ -164,7 +176,7 @@ func rendField(ct RDFCodingType, data interface{}, render *MsgRender) {
 
 func fieldToWire(ct RDFCodingType, data interface{}, buffer *util.OutputBuffer) {
 	switch ct {
-	case RDF_C_NAME:
+	case RDF_C_NAME, RDF_C_NAME_UNCOMPRESS:
 		n, _ := data.(*Name)
 		n.ToWire(buffer)
 
@@ -270,14 +282,22 @@ func fieldToStr(dt RDFDisplayType, d interface{}) string {
 	case RDF_D_NAME:
 		n, _ := d.(*Name)
 		return n.String(false)
+
 	case RDF_D_INT:
 		return fmt.Sprintf("%v", d)
+
 	case RDF_D_IP:
 		ip, _ := d.(net.IP)
 		return ip.String()
+
 	case RDF_D_TXT:
 		ss, _ := d.([]string)
-		return "\"" + strings.Join(ss, " ") + "\""
+		labels := []string{}
+		for _, label := range ss {
+			labels = append(labels, "\""+label+"\"")
+		}
+		return strings.Join(labels, " ")
+
 	case RDF_D_HEX:
 		bs, _ := d.([]uint8)
 		s := ""
@@ -285,15 +305,19 @@ func fieldToStr(dt RDFDisplayType, d interface{}) string {
 			s += fmt.Sprintf("%x", b)
 		}
 		return s
+
 	case RDF_D_B32:
 		bs, _ := d.([]uint8)
 		return base32.StdEncoding.EncodeToString([]byte(bs))
+
 	case RDF_D_B64:
 		bs, _ := d.([]uint8)
 		return base64.StdEncoding.EncodeToString([]byte(bs))
+
 	case RDF_D_STR:
 		s, _ := d.(string)
 		return s
+
 	default:
 		return ""
 	}

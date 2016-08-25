@@ -154,9 +154,11 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 		}
 
 		r.seqHashs[nlabelsUncomp] = parent.Hash(r.caseSensitive)
-		ptrOffset = r.findOffset(r.buffer, util.NewInputBuffer(parent.raw), r.seqHashs[nlabelsUncomp], r.caseSensitive)
-		if ptrOffset != NO_OFFSET {
-			break
+		if compress {
+			ptrOffset = r.findOffset(r.buffer, util.NewInputBuffer(parent.raw), r.seqHashs[nlabelsUncomp], r.caseSensitive)
+			if ptrOffset != NO_OFFSET {
+				break
+			}
 		}
 	}
 

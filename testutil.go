@@ -17,6 +17,7 @@ func WireMatch(t *testing.T, expectData []uint8, actualData []uint8) {
 	_, file, line, _ := runtime.Caller(1)
 	for i := 0; i < minLen; i++ {
 		if expectData[i] != actualData[i] {
+			t.Errorf("at pos %d\n", i)
 			t.Logf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n",
 				filepath.Base(file), line, expectData[i:], actualData[i:])
 			break

@@ -18,7 +18,7 @@ func (srv *SRV) Rend(r *MsgRender) {
 	rendField(RDF_C_UINT16, srv.Priority, r)
 	rendField(RDF_C_UINT16, srv.Weight, r)
 	rendField(RDF_C_UINT16, srv.Port, r)
-	rendField(RDF_C_NAME, srv.Target, r)
+	rendField(RDF_C_NAME_UNCOMPRESS, srv.Target, r)
 }
 
 func (srv *SRV) ToWire(buffer *util.OutputBuffer) {
