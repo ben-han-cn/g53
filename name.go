@@ -3,6 +3,7 @@ package g53
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"g53/util"
 )
@@ -92,8 +93,8 @@ type NameComparisonResult struct {
 // length: 		13
 // labelCount: 	4}
 type Name struct {
-	raw        []byte
-	offsets    []byte
+	raw        [MAX_WIRE]byte
+	offsets    [MAX_LABELS]byte
 	length     uint
 	labelCount uint
 }
@@ -113,9 +114,9 @@ func isDigit(c byte) bool {
 	return c >= '0' && c <= '9'
 }
 
-func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, []byte, error) {
-	data := make([]byte, 0, end-start+1)
-	offsets := []byte{}
+func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase bool) error {
+	data := name.raw[:]
+	offsets := name.offsets[:]
 	count := 0
 	digits := 0
 	value := 0
@@ -125,6 +126,8 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 	state := ftInit
 
 	offsets = append(offsets, 0)
+	dataIndex := 0
+	offsetIndex := 0
 	for len(data) < MAX_WIRE && start != end && done == false {
 		c := nameRaw[start]
 		start++
@@ -134,7 +137,7 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 		case ftInit:
 			if c == '.' {
 				if start != end {
-					return nil, nil, errors.New("non terminating empty label")
+					return errors.New("non terminating empty label")
 				}
 				isRoot = true
 			} else if c == '@' && start == end {
@@ -142,14 +145,16 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 			}
 
 			if isRoot {
-				data = append(data, 0)
+				data[dataIndex] = 0
+				dataIndex += 1
 				done = true
 				break
 			}
 			state = ftStart
 			goto again
 		case ftStart:
-			data = append(data, 0)
+			data[dataIndex] = 0
+			dataIndex += 1
 			count = 0
 			if c == '\\' {
 				state = ftInitialescape
@@ -160,12 +165,14 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 		case ftOrdinary:
 			if c == '.' {
 				if count == 0 {
-					return nil, nil, errors.New("duplicate period")
+					return errors.New("duplicate period")
 				}
 				data[offsets[len(offsets)-1]] = byte(count)
-				offsets = append(offsets, byte(len(data)))
+				offsets[offsetIndex] = byte(len(data))
+				offsetIndex += 1
 				if start == end {
-					data = append(data, 0)
+					data[dataIndex] = 0
+					dataIndex += 1
 					done = true
 				}
 				state = ftStart
@@ -174,17 +181,19 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 			} else {
 				count += 1
 				if count > MAX_LABEL_LEN {
-					return nil, nil, errors.New("too long label")
+					return errors.New("too long label")
 				}
 				if downcase {
-					data = append(data, maptolower[c])
+					data[dataIndex] = maptolower[c]
+					dataIndex += 1
 				} else {
-					data = append(data, c)
+					data[dataIndex] = c
+					dataIndex += 1
 				}
 			}
 		case ftInitialescape:
 			if c == '[' {
-				return nil, nil, errors.New("invalid label type")
+				return errors.New("invalid label type")
 			}
 			state = ftEscape
 			goto again
@@ -192,12 +201,16 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 			if isDigit(c&0xff) == false {
 				count += 1
 				if count > MAX_LABEL_LEN {
-					return nil, nil, errors.New("too long label")
+					return errors.New("too long label")
 				}
 				if downcase {
-					data = append(data, maptolower[c])
+					data[dataIndex] = maptolower[c]
+
+					dataIndex += 1
 				} else {
-					data = append(data, c)
+					data[dataIndex] = c
+
+					dataIndex += 1
 				}
 				state = ftOrdinary
 				break
@@ -208,24 +221,25 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 			goto again
 		case ftEscdecimal:
 			if isDigit(c & 0xff) {
-				return nil, nil, errors.New("mixture of escaped digit and non-digit")
+				return errors.New("mixture of escaped digit and non-digit")
 			}
 			value = value * 10
 			value = value + digitvalue[c]
 			digits++
 			if digits == 3 {
 				if value > 255 {
-					return nil, nil, errors.New("escaped decimal is to larg")
+					return errors.New("escaped decimal is to larg")
 				}
 				count++
 				if count > MAX_LABEL_LEN {
-					return nil, nil, errors.New("lable is too long")
+					return errors.New("lable is too long")
 				}
 				if downcase {
-					data = append(data, maptolower[c])
+					data[dataIndex] = maptolower[c]
 				} else {
-					data = append(data, c)
+					data[dataIndex] = c
 				}
+				dataIndex += 1
 				state = ftOrdinary
 			}
 		default:
@@ -234,34 +248,41 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 	}
 
 	if done == false {
-		if len(data) == MAX_WIRE {
-			return nil, nil, errors.New("too long name")
+		if dataIndex == MAX_WIRE {
+			return errors.New("too long name")
 		}
 		if start != end {
 			panic("start should equal to end")
 		}
 		if state != ftOrdinary {
-			return nil, nil, errors.New("incomplete textural name")
+			return errors.New("incomplete textural name")
 		} else {
 			if count == 0 {
 				panic("count shouldn't equal to zero")
 			}
 			data[offsets[len(offsets)-1]] = byte(count)
-			offsets = append(offsets, byte(len(data)))
-			data = append(data, 0)
+			offsets[offsetIndex] = byte(dataIndex)
+			offsetIndex += 1
+			data[dataIndex] = 0
+			dataIndex += 1
 		}
 	}
-	return data, offsets, nil
+
+	fmt.Printf("---> data is %v\n", data)
+	fmt.Printf("---> raw is %v\n", name.raw)
+
+	return nil
 }
 
-var Root = &Name{[]byte{0}, []byte{0}, 1, 1}
+var Root = &Name{[MAX_WIRE]byte{0}, [MAX_LABELS]byte{0}, 1, 1}
 
 func NewName(name string, downcase bool) (*Name, error) {
-	raw, offsets, err := stringParse([]byte(name), 0, uint(len(name)), downcase)
-	if err != nil {
-		return nil, err
+	newName := &Name{}
+	err := newName.stringParse([]byte(name), 0, uint(len(name)), downcase)
+	if err == nil {
+		return newName, nil
 	} else {
-		return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+		return nil, err
 	}
 }
 
@@ -275,26 +296,17 @@ func SubName(name string, nameLen uint, origin *Name, downcase bool) (*Name, err
 		return nil, errors.New("no origin for relative name")
 	}
 
-	raw, offsets, err := stringParse([]byte(name), 0, nameLen, downcase)
+	newName := &Name{}
+	err := newName.stringParse([]byte(name), 0, nameLen, downcase)
 	if err != nil {
 		return nil, err
 	}
 
 	if isAbsolute == false {
-		raw = append(raw[0:len(raw)-1], origin.raw...)
-		lastOffset := offsets[len(offsets)-1]
-		offsetCount := len(offsets)
-		offsets = append(offsets[0:len(offsets)-1], origin.offsets...)
-		for i := offsetCount - 1; i < len(offsets); i++ {
-			offsets[i] = offsets[i] + byte(lastOffset)
-		}
+		return newName.Concat(origin)
+	} else {
+		return newName, nil
 	}
-
-	if len(offsets) > MAX_LABELS || len(raw) > MAX_WIRE {
-		return nil, errors.New("combined name is too long")
-	}
-
-	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
 }
 
 const (
@@ -307,12 +319,12 @@ func NameFromString(s string) (*Name, error) {
 	return NewName(s, true)
 }
 
-func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
+func (name *Name) FromWire(buffer *util.InputBuffer, downcase bool) error {
 	n := uint(0)
 	nused := uint(0)
 	done := false
-	offsets := make([]byte, 0, MAX_LABELS)
-	raw := make([]byte, 0, buffer.Len())
+	offsets := name.offsets[:]
+	raw := name.raw[:]
 	seenPointer := false
 	state := fwStart
 	cused := uint(0)
@@ -334,7 +346,7 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 			if c <= MAX_LABEL_LEN {
 				offsets = append(offsets, byte(nused))
 				if nused+uint(c)+1 > MAX_WIRE {
-					return nil, errors.New("too long name")
+					return errors.New("too long name")
 				}
 
 				nused = nused + uint(c) + 1
@@ -349,7 +361,7 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 				n = 1
 				state = fwNewCurrent
 			} else {
-				return nil, errors.New("unknown label character")
+				return errors.New("unknown label character")
 			}
 		case fwOrdinary:
 			if downcase {
@@ -368,7 +380,7 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 				break
 			}
 			if newCurrent >= biggestPointer {
-				return nil, errors.New("bad compression pointer")
+				return errors.New("bad compression pointer")
 			}
 			biggestPointer = newCurrent
 			current = newCurrent
@@ -381,11 +393,23 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 	}
 
 	if done == false {
-		return nil, errors.New("imcomplete wire format")
+		return errors.New("imcomplete wire format")
 	}
 
 	buffer.SetPosition(posBegin + cused)
-	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+	name.length = uint(len(raw))
+	name.labelCount = uint(len(offsets))
+	return nil
+}
+
+func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
+	name := &Name{}
+	err := name.FromWire(buffer, downcase)
+	if err == nil {
+		return name, err
+	} else {
+		return nil, err
+	}
 }
 
 func (name *Name) Length() uint {
@@ -552,18 +576,17 @@ func (name *Name) Concat(suffix *Name) (*Name, error) {
 		return nil, errors.New("names has too many labels to concat")
 	}
 
-	raw := make([]byte, 0, finalLength)
-	raw = append(raw, name.raw[0:name.length-1]...)
-	raw = append(raw, suffix.raw...)
+	newName := &Name{}
+	copy(newName.raw[:], name.raw[0:name.length-1])
+	copy(newName.raw[name.length:], suffix.raw[0:suffix.length])
 
-	offsets := make([]byte, 0, finalLabelCount)
 	lastOffset := name.offsets[name.labelCount-1]
-	offsets = append(offsets, name.offsets[0:name.labelCount-1]...)
-	offsets = append(offsets, suffix.offsets...)
+	copy(newName.offsets[:], name.offsets[:name.labelCount-1])
+	copy(newName.offsets[name.labelCount:], suffix.offsets[:suffix.labelCount])
 	for i := name.labelCount - 1; i < finalLabelCount; i++ {
-		offsets[i] += byte(lastOffset)
+		newName.offsets[i] += byte(lastOffset)
 	}
-	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+	return newName, nil
 }
 
 func (name *Name) Reverse() *Name {
@@ -583,7 +606,17 @@ func (name *Name) Reverse() *Name {
 	}
 	raw = append(raw, 0)
 	offsets = append(offsets, labelLen)
-	return &Name{raw, offsets, name.length, name.labelCount}
+	return nameFromBuffer(raw, offsets)
+}
+
+func nameFromBuffer(raw []byte, offsets []byte) *Name {
+	newName := &Name{
+		length:     uint(len(raw)),
+		labelCount: uint(len(offsets)),
+	}
+	copy(newName.raw[:], raw)
+	copy(newName.offsets[:], offsets)
+	return newName
 }
 
 func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
@@ -599,7 +632,7 @@ func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
 		for i := uint(0); i < labelCount; i++ {
 			offsets[i] -= firstOffset
 		}
-		return &Name{raw, offsets, uint(len(raw)), labelCount}, nil
+		return nameFromBuffer(raw, offsets), nil
 	} else {
 		offsets := make([]byte, labelCount+1)
 		firstOffset := name.offsets[startLabel]
@@ -610,7 +643,7 @@ func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
 			offsets[i] -= firstOffset
 		}
 		raw[offsets[labelCount]] = 0
-		return &Name{raw, offsets, uint(len(raw)), labelCount + 1}, nil
+		return nameFromBuffer(raw, offsets), nil
 	}
 }
 
@@ -654,8 +687,7 @@ func (name *Name) StripLeft(c uint) (*Name, error) {
 	for i := uint(0); i < newLabelCount; i++ {
 		offsets[i] -= startPos
 	}
-
-	return &Name{name.raw[startPos:], offsets, name.length - uint(startPos), uint(len(offsets))}, nil
+	return nameFromBuffer(name.raw[startPos:], offsets), nil
 }
 
 func (name *Name) StripRight(c uint) (*Name, error) {
@@ -673,7 +705,7 @@ func (name *Name) StripRight(c uint) (*Name, error) {
 	copy(raw, name.raw[0:endPos])
 	raw[endPos] = 0
 	offsets := name.offsets[0 : labelIndex+1]
-	return &Name{raw, offsets, uint(endPos + 1), name.labelCount - c}, nil
+	return nameFromBuffer(raw, offsets), nil
 }
 
 const MAX_HASH_LEN = 16
@@ -702,5 +734,5 @@ func (name *Name) Rend(render *MsgRender) {
 }
 
 func (name *Name) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteData(name.raw)
+	buffer.WriteData(name.raw[:name.length])
 }
