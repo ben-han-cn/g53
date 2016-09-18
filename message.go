@@ -72,6 +72,7 @@ func (m *Message) FromWire(buffer *util.InputBuffer) error {
 		}
 	}
 
+	m.Edns = nil
 	for i := 0; i < SectionCount; i++ {
 		if err := m.sectionFromWire(SectionType(i), buffer); err != nil {
 			return err
