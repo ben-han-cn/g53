@@ -367,7 +367,7 @@ func (t RRType) String() string {
 }
 
 type RRset struct {
-	Name   *Name
+	Name   Name
 	Type   RRType
 	Class  RRClass
 	Ttl    RRTTL
@@ -375,38 +375,35 @@ type RRset struct {
 }
 
 func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
-	n, err := NameFromWire(buffer, true)
+	rrset := &RRset{}
+
+	err := rrset.Name.FromWire(buffer, true)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := TypeFromWire(buffer)
+	rrset.Type, err = TypeFromWire(buffer)
 	if err != nil {
 		return nil, err
 	}
 
-	cls, err := ClassFromWire(buffer)
+	rrset.Class, err = ClassFromWire(buffer)
 	if err != nil {
 		return nil, err
 	}
 
-	ttl, err := TTLFromWire(buffer)
+	rrset.Ttl, err = TTLFromWire(buffer)
 	if err != nil {
 		return nil, err
 	}
 
-	rdata, err := RdataFromWire(t, buffer)
+	rdata, err := RdataFromWire(rrset.Type, buffer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &RRset{
-		Name:   n,
-		Type:   t,
-		Class:  cls,
-		Ttl:    ttl,
-		Rdatas: []Rdata{rdata},
-	}, nil
+	rrset.Rdatas = []Rdata{rdata}
+	return rrset, nil
 }
 
 func (rrset *RRset) Rend(r *MsgRender) {
@@ -453,7 +450,7 @@ func (rrset *RRset) RrCount() int {
 }
 
 func (rrset *RRset) IsSameRrset(other *RRset) bool {
-	return (rrset.Type == other.Type) && rrset.Name.Equals(other.Name)
+	return (rrset.Type == other.Type) && rrset.Name.Equals(&other.Name)
 }
 
 func (rrset *RRset) AddRdata(rdata Rdata) {

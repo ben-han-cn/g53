@@ -3,7 +3,6 @@ package g53
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
 	"g53/util"
 )
@@ -114,9 +113,9 @@ func isDigit(c byte) bool {
 	return c >= '0' && c <= '9'
 }
 
-func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase bool) error {
-	data := name.raw[:]
-	offsets := name.offsets[:]
+func stringParse(nameRaw []byte, start uint, end uint, downcase bool) (*Name, error) {
+	data := make([]byte, 0, end-start+1)
+	offsets := []byte{}
 	count := 0
 	digits := 0
 	value := 0
@@ -126,8 +125,6 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 	state := ftInit
 
 	offsets = append(offsets, 0)
-	dataIndex := 0
-	offsetIndex := 0
 	for len(data) < MAX_WIRE && start != end && done == false {
 		c := nameRaw[start]
 		start++
@@ -137,7 +134,7 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 		case ftInit:
 			if c == '.' {
 				if start != end {
-					return errors.New("non terminating empty label")
+					return nil, errors.New("non terminating empty label")
 				}
 				isRoot = true
 			} else if c == '@' && start == end {
@@ -145,16 +142,14 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 			}
 
 			if isRoot {
-				data[dataIndex] = 0
-				dataIndex += 1
+				data = append(data, 0)
 				done = true
 				break
 			}
 			state = ftStart
 			goto again
 		case ftStart:
-			data[dataIndex] = 0
-			dataIndex += 1
+			data = append(data, 0)
 			count = 0
 			if c == '\\' {
 				state = ftInitialescape
@@ -165,14 +160,12 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 		case ftOrdinary:
 			if c == '.' {
 				if count == 0 {
-					return errors.New("duplicate period")
+					return nil, errors.New("duplicate period")
 				}
 				data[offsets[len(offsets)-1]] = byte(count)
-				offsets[offsetIndex] = byte(len(data))
-				offsetIndex += 1
+				offsets = append(offsets, byte(len(data)))
 				if start == end {
-					data[dataIndex] = 0
-					dataIndex += 1
+					data = append(data, 0)
 					done = true
 				}
 				state = ftStart
@@ -181,19 +174,17 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 			} else {
 				count += 1
 				if count > MAX_LABEL_LEN {
-					return errors.New("too long label")
+					return nil, errors.New("too long label")
 				}
 				if downcase {
-					data[dataIndex] = maptolower[c]
-					dataIndex += 1
+					data = append(data, maptolower[c])
 				} else {
-					data[dataIndex] = c
-					dataIndex += 1
+					data = append(data, c)
 				}
 			}
 		case ftInitialescape:
 			if c == '[' {
-				return errors.New("invalid label type")
+				return nil, errors.New("invalid label type")
 			}
 			state = ftEscape
 			goto again
@@ -201,16 +192,12 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 			if isDigit(c&0xff) == false {
 				count += 1
 				if count > MAX_LABEL_LEN {
-					return errors.New("too long label")
+					return nil, errors.New("too long label")
 				}
 				if downcase {
-					data[dataIndex] = maptolower[c]
-
-					dataIndex += 1
+					data = append(data, maptolower[c])
 				} else {
-					data[dataIndex] = c
-
-					dataIndex += 1
+					data = append(data, c)
 				}
 				state = ftOrdinary
 				break
@@ -221,25 +208,24 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 			goto again
 		case ftEscdecimal:
 			if isDigit(c & 0xff) {
-				return errors.New("mixture of escaped digit and non-digit")
+				return nil, errors.New("mixture of escaped digit and non-digit")
 			}
 			value = value * 10
 			value = value + digitvalue[c]
 			digits++
 			if digits == 3 {
 				if value > 255 {
-					return errors.New("escaped decimal is to larg")
+					return nil, errors.New("escaped decimal is to larg")
 				}
 				count++
 				if count > MAX_LABEL_LEN {
-					return errors.New("lable is too long")
+					return nil, errors.New("lable is too long")
 				}
 				if downcase {
-					data[dataIndex] = maptolower[c]
+					data = append(data, maptolower[c])
 				} else {
-					data[dataIndex] = c
+					data = append(data, c)
 				}
-				dataIndex += 1
 				state = ftOrdinary
 			}
 		default:
@@ -248,42 +234,31 @@ func (name *Name) stringParse(nameRaw []byte, start uint, end uint, downcase boo
 	}
 
 	if done == false {
-		if dataIndex == MAX_WIRE {
-			return errors.New("too long name")
+		if len(data) == MAX_WIRE {
+			return nil, errors.New("too long name")
 		}
 		if start != end {
 			panic("start should equal to end")
 		}
 		if state != ftOrdinary {
-			return errors.New("incomplete textural name")
+			return nil, errors.New("incomplete textural name")
 		} else {
 			if count == 0 {
 				panic("count shouldn't equal to zero")
 			}
 			data[offsets[len(offsets)-1]] = byte(count)
-			offsets[offsetIndex] = byte(dataIndex)
-			offsetIndex += 1
-			data[dataIndex] = 0
-			dataIndex += 1
+			offsets = append(offsets, byte(len(data)))
+			data = append(data, 0)
 		}
 	}
 
-	fmt.Printf("---> data is %v\n", data)
-	fmt.Printf("---> raw is %v\n", name.raw)
-
-	return nil
+	return nameFromBuffer(data, offsets), nil
 }
 
 var Root = &Name{[MAX_WIRE]byte{0}, [MAX_LABELS]byte{0}, 1, 1}
 
 func NewName(name string, downcase bool) (*Name, error) {
-	newName := &Name{}
-	err := newName.stringParse([]byte(name), 0, uint(len(name)), downcase)
-	if err == nil {
-		return newName, nil
-	} else {
-		return nil, err
-	}
+	return stringParse([]byte(name), 0, uint(len(name)), downcase)
 }
 
 func SubName(name string, nameLen uint, origin *Name, downcase bool) (*Name, error) {
@@ -296,8 +271,7 @@ func SubName(name string, nameLen uint, origin *Name, downcase bool) (*Name, err
 		return nil, errors.New("no origin for relative name")
 	}
 
-	newName := &Name{}
-	err := newName.stringParse([]byte(name), 0, nameLen, downcase)
+	newName, err := stringParse([]byte(name), 0, nameLen, downcase)
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +306,8 @@ func (name *Name) FromWire(buffer *util.InputBuffer, downcase bool) error {
 	posBegin := current
 	biggestPointer := current
 	newCurrent := uint(0)
+	nameLen := 0
+	labelCount := 0
 
 	for current < buffer.Len() && done == false {
 		c, _ := buffer.ReadUint8()
@@ -344,13 +320,15 @@ func (name *Name) FromWire(buffer *util.InputBuffer, downcase bool) error {
 		switch state {
 		case fwStart:
 			if c <= MAX_LABEL_LEN {
-				offsets = append(offsets, byte(nused))
+				offsets[labelCount] = byte(nused)
+				labelCount += 1
 				if nused+uint(c)+1 > MAX_WIRE {
 					return errors.New("too long name")
 				}
 
 				nused = nused + uint(c) + 1
-				raw = append(raw, c)
+				raw[nameLen] = c
+				nameLen += 1
 				if c == 0 {
 					done = true
 				}
@@ -367,7 +345,8 @@ func (name *Name) FromWire(buffer *util.InputBuffer, downcase bool) error {
 			if downcase {
 				c = maptolower[c]
 			}
-			raw = append(raw, c)
+			raw[nameLen] = c
+			nameLen += 1
 			n--
 			if n == 0 {
 				state = fwStart
@@ -397,8 +376,8 @@ func (name *Name) FromWire(buffer *util.InputBuffer, downcase bool) error {
 	}
 
 	buffer.SetPosition(posBegin + cused)
-	name.length = uint(len(raw))
-	name.labelCount = uint(len(offsets))
+	name.length = uint(nameLen)
+	name.labelCount = uint(labelCount)
 	return nil
 }
 
@@ -578,14 +557,24 @@ func (name *Name) Concat(suffix *Name) (*Name, error) {
 
 	newName := &Name{}
 	copy(newName.raw[:], name.raw[0:name.length-1])
-	copy(newName.raw[name.length:], suffix.raw[0:suffix.length])
+	appendPos := int(name.length - 1)
+	for i, c := range suffix.raw[:suffix.length] {
+		newName.raw[appendPos+i] = c
+	}
 
 	lastOffset := name.offsets[name.labelCount-1]
 	copy(newName.offsets[:], name.offsets[:name.labelCount-1])
-	copy(newName.offsets[name.labelCount:], suffix.offsets[:suffix.labelCount])
+	appendPos = int(name.labelCount - 1)
+	for i, c := range suffix.offsets[:suffix.labelCount] {
+		newName.offsets[appendPos+i] = c
+	}
+
 	for i := name.labelCount - 1; i < finalLabelCount; i++ {
 		newName.offsets[i] += byte(lastOffset)
 	}
+
+	newName.length = finalLength
+	newName.labelCount = finalLabelCount
 	return newName, nil
 }
 
@@ -687,7 +676,7 @@ func (name *Name) StripLeft(c uint) (*Name, error) {
 	for i := uint(0); i < newLabelCount; i++ {
 		offsets[i] -= startPos
 	}
-	return nameFromBuffer(name.raw[startPos:], offsets), nil
+	return nameFromBuffer(name.raw[startPos:name.length], offsets), nil
 }
 
 func (name *Name) StripRight(c uint) (*Name, error) {

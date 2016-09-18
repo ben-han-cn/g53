@@ -29,8 +29,8 @@ func matchMessageRaw(t *testing.T, rawData string, m *Message) {
 	nm, err := MessageFromWire(buffer)
 	Assert(t, err == nil, "err should be nil")
 
-	Equal(t, *(nm.Header), *(m.Header))
-	matchQuestion(t, nm.Question, m.Question)
+	Equal(t, nm.Header, m.Header)
+	matchQuestion(t, &nm.Question, &m.Question)
 	matchSection(t, nm.GetSection(AnswerSection), m.GetSection(AnswerSection))
 	matchSection(t, nm.GetSection(AuthSection), m.GetSection(AuthSection))
 	matchSection(t, nm.GetSection(AdditionalSection), m.GetSection(AdditionalSection))
@@ -55,7 +55,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 
 	var answer Section
 	answer = append(answer, &RRset{
-		Name:   qn,
+		Name:   *qn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -66,7 +66,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	ns, _ := NameFromString("example.com.")
 	ra3, _ := NSFromString("ns1.example.com.")
 	authority = append(authority, &RRset{
-		Name:   ns,
+		Name:   *ns,
 		Type:   RR_NS,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -77,7 +77,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	glue, _ := NameFromString("ns1.example.com.")
 	ra4, _ := AFromString("2.2.2.2")
 	additional = append(additional, &RRset{
-		Name:   glue,
+		Name:   *glue,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -85,9 +85,9 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	})
 
 	matchMessageRaw(t, "04b0850000010002000100020474657374076578616d706c6503636f6d0000010001c00c0001000100000e100004c0000202c00c0001000100000e100004c0000201c0110002000100000e100006036e7331c011c04e0001000100000e100004020202020000291000000000000000", &Message{
-		Header: buildHeader(uint16(1200), []FlagField{FLAG_QR, FLAG_AA, FLAG_RD}, []uint16{1, 2, 1, 2}, OP_QUERY, R_NOERROR),
-		Question: &Question{
-			Name:  qn,
+		Header: *buildHeader(uint16(1200), []FlagField{FLAG_QR, FLAG_AA, FLAG_RD}, []uint16{1, 2, 1, 2}, OP_QUERY, R_NOERROR),
+		Question: Question{
+			Name:  *qn,
 			Type:  RR_A,
 			Class: CLASS_IN,
 		},
@@ -140,7 +140,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	ra1, _ := AFromString("202.173.11.10")
 	var answer Section
 	answer = append(answer, &RRset{
-		Name:   qn,
+		Name:   *qn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(600),
@@ -154,7 +154,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	ns3, _ := NSFromString("gns2.zdnscloud.net.cn.")
 	ns4, _ := NSFromString("lns1.zdnscloud.info.")
 	auth = append(auth, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_NS,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(193),
@@ -165,7 +165,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	sn, _ = NameFromString("gns1.zdnscloud.net.")
 	ra1, _ = AFromString("1.8.152.1")
 	additional = append(additional, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(9772),
@@ -175,7 +175,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	sn, _ = NameFromString("gns2.zdnscloud.net.cn.")
 	ra1, _ = AFromString("1.8.153.1")
 	additional = append(additional, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(1433),
@@ -188,7 +188,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	aa3, _ := AFromString("182.131.23.11")
 	aa4, _ := AFromString("1.8.101.253")
 	additional = append(additional, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(1992),
@@ -197,7 +197,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 
 	aaaaa1, _ := AAAAFromString("2401:8d00:4::1")
 	additional = append(additional, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_AAAA,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(1992),
@@ -210,7 +210,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	aa3, _ = AFromString("1.8.101.252")
 	aa4, _ = AFromString("111.1.33.138")
 	additional = append(additional, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(12266),
@@ -219,7 +219,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 
 	aaaaa1, _ = AAAAFromString("2401:8d00:6::1")
 	additional = append(additional, &RRset{
-		Name:   sn,
+		Name:   *sn,
 		Type:   RR_AAAA,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(9375),
@@ -227,9 +227,9 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	})
 
 	matchMessageRaw(t, knet_cn, &Message{
-		Header: buildHeader(uint16(1200), []FlagField{FLAG_QR, FLAG_RD, FLAG_RA}, []uint16{1, 1, 4, 13}, OP_QUERY, R_NOERROR),
-		Question: &Question{
-			Name:  qn,
+		Header: *buildHeader(uint16(1200), []FlagField{FLAG_QR, FLAG_RD, FLAG_RA}, []uint16{1, 1, 4, 13}, OP_QUERY, R_NOERROR),
+		Question: Question{
+			Name:  *qn,
 			Type:  RR_A,
 			Class: CLASS_IN,
 		},

@@ -2,20 +2,15 @@ package g53
 
 import (
 	"testing"
-
-	"fmt"
 )
 
 func TestNameConcat(t *testing.T) {
-	knetcn, err := NewName("www.knet.Cn", true)
-	fmt.Printf("---> err is %v\n", err)
+	knetcn, _ := NewName("www.knet.Cn", true)
 	knet, _ := NewName("www.knet", true)
 	cn, _ := NewName("cn", true)
 
-	fmt.Printf("--> %v, %v, %v\n", knetcn, knet, cn)
-	return
-
 	knetcn2, _ := knet.Concat(cn)
+
 	relationship := knetcn.Compare(knetcn2, true)
 	if relationship.Order != 0 ||
 		relationship.CommonLabelCount != 4 ||
@@ -71,10 +66,10 @@ func TestNameConcat(t *testing.T) {
 	}
 }
 
-/*
 func TestNameStrip(t *testing.T) {
 	knetmixcase, _ := NewName("www.KNET.cN", false)
 	knetWithoutCN, _ := knetmixcase.StripLeft(1)
+
 	NameEqToStr(t, knetWithoutCN, "knet.cn")
 
 	if knetmixcase.Hash(false) == knetWithoutCN.Hash(false) {
@@ -106,4 +101,3 @@ func TestNameStrip(t *testing.T) {
 	root, _ = knetmixcase.StripRight(3)
 	NameEqToStr(t, root, ".")
 }
-*/

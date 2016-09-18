@@ -2,6 +2,7 @@ package g53
 
 import (
 	"bytes"
+
 	"g53/util"
 )
 
@@ -26,58 +27,58 @@ func (section Section) rrCount() int {
 }
 
 type Message struct {
-	Header   *Header
-	Question *Question
+	Header   Header
+	Question Question
 	Sections [SectionCount]Section
 	Edns     *EDNS
 }
 
 func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
-	h := &Header{}
-	h.SetFlag(FLAG_RD, true)
-	h.Opcode = OP_QUERY
+	m := &Message{}
 
-	q := &Question{
-		Name:  name,
-		Type:  typ,
-		Class: CLASS_IN,
-	}
+	m.Header.SetFlag(FLAG_RD, true)
+	m.Header.Opcode = OP_QUERY
 
-	return &Message{
-		Header:   h,
-		Question: q,
-		Edns: &EDNS{
-			UdpSize:     uint16(msgSize),
-			DnssecAware: dnssec,
-		},
+	m.Question.Name = *name
+	m.Question.Type = typ
+	m.Question.Class = CLASS_IN
+
+	m.Edns = &EDNS{
+		UdpSize:     uint16(msgSize),
+		DnssecAware: dnssec,
 	}
+	return m
 }
 
 func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
-	h, err := HeaderFromWire(buffer)
-	if err != nil {
+	m := &Message{}
+	if err := m.FromWire(buffer); err == nil {
+		return m, nil
+	} else {
 		return nil, err
 	}
+}
 
-	var q *Question
-	if h.QDCount == 1 {
-		q, err = QuestionFromWire(buffer)
-		if err != nil {
-			return nil, err
-		}
+func (m *Message) FromWire(buffer *util.InputBuffer) error {
+	err := m.Header.FromWire(buffer)
+	if err != nil {
+		return err
 	}
 
-	m := &Message{
-		Header:   h,
-		Question: q,
+	if m.Header.QDCount == 1 {
+		err = m.Question.FromWire(buffer)
+		if err != nil {
+			return err
+		}
 	}
 
 	for i := 0; i < SectionCount; i++ {
 		if err := m.sectionFromWire(SectionType(i), buffer); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return m, nil
+
+	return nil
 }
 
 func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) error {
@@ -130,10 +131,12 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 }
 
 func (m *Message) Rend(r *MsgRender) {
-	if m.Question == nil {
-		m.Header.QDCount = 0
-	} else {
+	hasQuestion := (m.Question.Type != RRType(0))
+
+	if hasQuestion {
 		m.Header.QDCount = 1
+	} else {
+		m.Header.QDCount = 0
 	}
 
 	m.Header.ANCount = uint16(m.Sections[AnswerSection].rrCount())
@@ -145,7 +148,7 @@ func (m *Message) Rend(r *MsgRender) {
 
 	m.Header.Rend(r)
 
-	if m.Question != nil {
+	if hasQuestion {
 		m.Question.Rend(r)
 	}
 
@@ -166,7 +169,7 @@ func (s Section) Rend(r *MsgRender) {
 
 func (m *Message) ToWire(buffer *util.OutputBuffer) {
 	m.Header.ToWire(buffer)
-	if m.Question != nil {
+	if m.Header.QDCount == 1 {
 		m.Question.ToWire(buffer)
 	}
 
@@ -192,7 +195,7 @@ func (m *Message) String() string {
 	}
 
 	buf.WriteString(";; QUESTION SECTION:\n")
-	if m.Question != nil {
+	if m.Header.QDCount == 1 {
 		buf.WriteString(m.Question.String())
 		buf.WriteString("\n")
 	}
@@ -228,7 +231,7 @@ func (m *Message) GetSection(st SectionType) Section {
 
 func (m *Message) Clear() {
 	m.Header.Clear()
-	m.Question = nil
+	m.Question.Type = RRType(0)
 	for i := 0; i < SectionCount; i++ {
 		m.Sections[i] = nil
 	}
@@ -246,7 +249,7 @@ func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, r
 		}
 	}
 	newRRset := &RRset{
-		Name:   name,
+		Name:   *name,
 		Type:   typ,
 		Class:  class,
 		Rdatas: []Rdata{rdata},
@@ -255,7 +258,7 @@ func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, r
 }
 
 func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
-	return m.rrsetIndex(st, rrset.Name, rrset.Type, rrset.Class) != -1
+	return m.rrsetIndex(st, &rrset.Name, rrset.Type, rrset.Class) != -1
 }
 
 func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRClass) int {
@@ -274,7 +277,7 @@ func (m *Message) HasRRsetWithNameType(st SectionType, n *Name, t RRType) bool {
 }
 
 func (m *Message) MakeResponse() *Message {
-	h := &Header{
+	h := Header{
 		Id:      m.Header.Id,
 		Opcode:  OP_QUERY,
 		QDCount: m.Header.QDCount,

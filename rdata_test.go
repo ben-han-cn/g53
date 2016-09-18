@@ -1,8 +1,9 @@
 package g53
 
 import (
-	"g53/util"
 	"testing"
+
+	"g53/util"
 )
 
 func parseMatchRender(t *testing.T, rawData string) {

@@ -18,7 +18,7 @@ func matchRRsetRaw(t *testing.T, rawData string, rs *RRset) {
 }
 
 func matchRRset(t *testing.T, nrs *RRset, rs *RRset) {
-	Assert(t, nrs.Name.Equals(rs.Name), fmt.Sprintf("%s != %s", nrs.Name.String(false), rs.Name.String(false)))
+	Assert(t, nrs.Name.Equals(&rs.Name), fmt.Sprintf("%s != %s", nrs.Name.String(false), rs.Name.String(false)))
 	Equal(t, nrs.Type, rs.Type)
 	Equal(t, nrs.Class, rs.Class)
 	Equal(t, len(nrs.Rdatas), len(rs.Rdatas))
@@ -31,7 +31,7 @@ func TestRRsetFromToWire(t *testing.T) {
 	n, _ := NameFromString("test.example.com.")
 	ra, _ := AFromString("192.0.2.1")
 	matchRRsetRaw(t, "0474657374076578616d706c6503636f6d000001000100000e100004c0000201", &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -45,7 +45,7 @@ func TestRRsetRoateRdata(t *testing.T) {
 	ra3, _ := AFromString("3.3.3.3")
 	n, _ := NameFromString("test.example.com.")
 	rrset := &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
