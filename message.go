@@ -26,14 +26,14 @@ func (section Section) rrCount() int {
 }
 
 type Message struct {
-	Header   *Header
+	Header   Header
 	Question *Question
 	Sections [SectionCount]Section
 	Edns     *EDNS
 }
 
 func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
-	h := &Header{}
+	h := Header{}
 	h.SetFlag(FLAG_RD, true)
 	h.Opcode = OP_QUERY
 
@@ -68,7 +68,7 @@ func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
 	}
 
 	m := &Message{
-		Header:   h,
+		Header:   *h,
 		Question: q,
 	}
 
@@ -143,7 +143,7 @@ func (m *Message) Rend(r *MsgRender) {
 		m.Header.ARCount += 1
 	}
 
-	m.Header.Rend(r)
+	(&m.Header).Rend(r)
 
 	if m.Question != nil {
 		m.Question.Rend(r)
@@ -165,7 +165,7 @@ func (s Section) Rend(r *MsgRender) {
 }
 
 func (m *Message) ToWire(buffer *util.OutputBuffer) {
-	m.Header.ToWire(buffer)
+	(&m.Header).ToWire(buffer)
 	if m.Question != nil {
 		m.Question.ToWire(buffer)
 	}
@@ -274,7 +274,7 @@ func (m *Message) HasRRsetWithNameType(st SectionType, n *Name, t RRType) bool {
 }
 
 func (m *Message) MakeResponse() *Message {
-	h := &Header{
+	h := Header{
 		Id:      m.Header.Id,
 		Opcode:  OP_QUERY,
 		QDCount: m.Header.QDCount,
