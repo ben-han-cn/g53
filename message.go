@@ -54,22 +54,19 @@ func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
 }
 
 func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
-	h, err := HeaderFromWire(buffer)
+	m := Message{}
+	h := &m.Header
+	err := HeaderFromWire(h, buffer)
 	if err != nil {
 		return nil, err
 	}
 
-	var q *Question
 	if h.QDCount == 1 {
-		q, err = QuestionFromWire(buffer)
+		q, err := QuestionFromWire(buffer)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	m := &Message{
-		Header:   *h,
-		Question: q,
+		m.Question = q
 	}
 
 	for i := 0; i < SectionCount; i++ {
@@ -77,7 +74,8 @@ func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
 			return nil, err
 		}
 	}
-	return m, nil
+
+	return &m, nil
 }
 
 func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) error {

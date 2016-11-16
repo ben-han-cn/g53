@@ -59,26 +59,20 @@ func (h *Header) SetFlag(ff FlagField, set bool) {
 	}
 }
 
-func HeaderFromWire(buffer *util.InputBuffer) (*Header, error) {
+func HeaderFromWire(h *Header, buffer *util.InputBuffer) error {
 	if buffer.Len() < 12 {
-		return nil, errors.New("too short wire data for message header")
+		return errors.New("too short wire data for message header")
 	}
-	id, _ := buffer.ReadUint16()
+	h.Id, _ = buffer.ReadUint16()
 	flag, _ := buffer.ReadUint16()
-	qdcount, _ := buffer.ReadUint16()
-	ancount, _ := buffer.ReadUint16()
-	nscount, _ := buffer.ReadUint16()
-	arcount, _ := buffer.ReadUint16()
-	return &Header{
-		Id:      id,
-		Flag:    HeaderFlag(flag & HEADERFLAG_MASK),
-		Opcode:  Opcode((flag & OPCODE_MASK) >> OPCODE_SHIFT),
-		Rcode:   Rcode(flag & RCODE_MASK),
-		QDCount: qdcount,
-		ANCount: ancount,
-		NSCount: nscount,
-		ARCount: arcount,
-	}, nil
+	h.Flag = HeaderFlag(flag & HEADERFLAG_MASK)
+	h.Opcode = Opcode((flag & OPCODE_MASK) >> OPCODE_SHIFT)
+	h.Rcode = Rcode(flag & RCODE_MASK)
+	h.QDCount, _ = buffer.ReadUint16()
+	h.ANCount, _ = buffer.ReadUint16()
+	h.NSCount, _ = buffer.ReadUint16()
+	h.ARCount, _ = buffer.ReadUint16()
+	return nil
 }
 
 func (h *Header) Rend(r *MsgRender) {
