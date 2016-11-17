@@ -704,3 +704,7 @@ func (name *Name) Rend(render *MsgRender) {
 func (name *Name) ToWire(buffer *util.OutputBuffer) {
 	buffer.WriteData(name.raw)
 }
+
+func (name *Name) IsRoot() bool {
+	return name.LabelCount() == 1
+}
