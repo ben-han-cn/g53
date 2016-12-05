@@ -128,19 +128,7 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 }
 
 func (m *Message) Rend(r *MsgRender) {
-	if m.Question == nil {
-		m.Header.QDCount = 0
-	} else {
-		m.Header.QDCount = 1
-	}
-
-	m.Header.ANCount = uint16(m.Sections[AnswerSection].rrCount())
-	m.Header.NSCount = uint16(m.Sections[AuthSection].rrCount())
-	m.Header.ARCount = uint16(m.Sections[AdditionalSection].rrCount())
-	if m.Edns != nil {
-		m.Header.ARCount += 1
-	}
-
+	m.recalculateSectionRrCount()
 	(&m.Header).Rend(r)
 
 	if m.Question != nil {
@@ -153,6 +141,22 @@ func (m *Message) Rend(r *MsgRender) {
 
 	if m.Edns != nil {
 		m.Edns.Rend(r)
+	}
+}
+
+func (m *Message) recalculateSectionRrCount() {
+	if m.Question == nil {
+		m.Header.QDCount = 0
+	} else {
+		m.Header.QDCount = 1
+	}
+
+	m.Header.ANCount = uint16(m.Sections[AnswerSection].rrCount())
+	m.Header.NSCount = uint16(m.Sections[AuthSection].rrCount())
+	m.Header.ARCount = uint16(m.Sections[AdditionalSection].rrCount())
+
+	if m.Edns != nil {
+		m.Header.ARCount += 1
 	}
 }
 
@@ -180,6 +184,8 @@ func (s Section) ToWire(buffer *util.OutputBuffer) {
 }
 
 func (m *Message) String() string {
+	m.recalculateSectionRrCount()
+
 	var buf bytes.Buffer
 	buf.WriteString(m.Header.String())
 	buf.WriteString("\n")
@@ -300,4 +306,12 @@ func (m *Message) ClearSection(s SectionType) {
 	default:
 		panic("question section couldn't be cleared")
 	}
+}
+
+func (m *Message) SectionRrCount(s SectionType) int {
+	return m.Sections[s].rrCount()
+}
+
+func (m *Message) SectionRRsetCount(s SectionType) int {
+	return len(m.Sections[s])
 }
