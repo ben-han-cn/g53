@@ -470,12 +470,12 @@ func (rrset *RRset) Equals(other *RRset) bool {
 		return true
 	}
 
-	rdatas1 := rrset.Rdatas
-	rdatas2 := other.Rdatas
-	sort.Sort(RdataSlice(rdatas1))
-	sort.Sort(RdataSlice(rdatas2))
+	selfClone := rrset.Clone()
+	otherClone := other.Clone()
+	selfClone.SortRdata()
+	otherClone.SortRdata()
 	for i := 0; i < rdataCount; i++ {
-		if rdatas1[i].Compare(rdatas2[i]) != 0 {
+		if selfClone.Rdatas[i].Compare(otherClone.Rdatas[i]) != 0 {
 			return false
 		}
 	}
@@ -503,4 +503,17 @@ func (rdatas RdataSlice) Less(i, j int) bool { return rdatas[i].Compare(rdatas[j
 
 func (rrset *RRset) SortRdata() {
 	sort.Sort(RdataSlice(rrset.Rdatas))
+}
+
+func (rrset *RRset) Clone() *RRset {
+	rdataCount := len(rrset.Rdatas)
+	rdatas := make([]Rdata, rdataCount, rdataCount)
+	copy(rdatas, rrset.Rdatas)
+	return &RRset{
+		Name:   rrset.Name,
+		Type:   rrset.Type,
+		Class:  rrset.Class,
+		Ttl:    rrset.Ttl,
+		Rdatas: rdatas,
+	}
 }

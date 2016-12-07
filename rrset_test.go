@@ -115,7 +115,8 @@ func TestRRsetEquals(t *testing.T) {
 		Type:   RR_NS,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
-		Rdatas: []Rdata{ra4, ra2, ra1},
+		Rdatas: []Rdata{ra2, ra4, ra1},
 	}
 	Assert(t, rrset1.Equals(rrset2), "rrset1 should equl rrset2")
+	Assert(t, util.StringSliceCompare([]string{rrset1.String()}, []string{rrset2.String()}, false) != 0, "rrset1 has different rdata order with rrset2")
 }
