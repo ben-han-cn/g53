@@ -1,6 +1,7 @@
 package g53
 
 import (
+	"bytes"
 	"encoding/base32"
 	"encoding/base64"
 	"errors"
@@ -205,14 +206,65 @@ func fieldToWire(ct RDFCodingType, data interface{}, buffer *util.OutputBuffer) 
 		for _, d := range ds {
 			fieldToWire(RDF_C_BYTE_BINARY, d, buffer)
 		}
-		d, _ := data.([]uint8)
-		buffer.WriteData(d)
 
 	case RDF_C_BYTE_BINARY:
 		d, _ := data.([]uint8)
 		buffer.WriteUint8(uint8(len(d)))
 		buffer.WriteData(d)
 	}
+}
+
+func fieldCompare(ct RDFCodingType, data1 interface{}, data2 interface{}) int {
+	switch ct {
+	case RDF_C_NAME, RDF_C_NAME_UNCOMPRESS:
+		n1, _ := data1.(*Name)
+		n2, _ := data2.(*Name)
+		return n1.Compare(n2, false).Order
+
+	case RDF_C_UINT8:
+		d1, _ := data1.(uint8)
+		d2, _ := data2.(uint8)
+		return int(d1) - int(d2)
+
+	case RDF_C_UINT16:
+		d1, _ := data1.(uint16)
+		d2, _ := data2.(uint16)
+		return int(d1) - int(d2)
+
+	case RDF_C_UINT32:
+		d1, _ := data1.(uint32)
+		d2, _ := data2.(uint32)
+		if d1 == d2 {
+			return 0
+		} else if d1 < d2 {
+			return -1
+		} else {
+			return 1
+		}
+
+	case RDF_C_IPV4, RDF_C_IPV6:
+		ip1, _ := data1.(net.IP)
+		ip2, _ := data2.(net.IP)
+		return bytes.Compare([]byte(ip1), []byte(ip2))
+
+	case RDF_C_BINARY:
+		d1, _ := data1.([]byte)
+		d2, _ := data2.([]byte)
+		return bytes.Compare(d1, d2)
+
+	case RDF_C_TXT:
+		ds1, _ := data1.([]string)
+		ds2, _ := data2.([]string)
+		return util.StringSliceCompare(ds1, ds2, true)
+
+	case RDF_C_BYTE_BINARY:
+		d1, _ := data1.([]byte)
+		d2, _ := data2.([]byte)
+		return bytes.Compare(d1, d2)
+	}
+
+	panic("unknown rr type")
+	return 0
 }
 
 func fieldFromStr(dt RDFDisplayType, s string) (interface{}, error) {

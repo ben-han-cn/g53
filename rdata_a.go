@@ -19,6 +19,10 @@ func (a *A) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_IPV4, a.Host, buffer)
 }
 
+func (a *A) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_IPV4, a.Host, other.(*A).Host)
+}
+
 func (a *A) String() string {
 	return fieldToStr(RDF_D_IP, a.Host)
 }

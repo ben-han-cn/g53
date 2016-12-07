@@ -10,6 +10,7 @@ import (
 type Rdata interface {
 	Rend(r *MsgRender)
 	ToWire(buffer *util.OutputBuffer)
+	Compare(Rdata) int
 	String() string
 }
 

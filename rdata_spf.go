@@ -18,6 +18,10 @@ func (spf *SPF) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_TXT, spf.Data, buffer)
 }
 
+func (spf *SPF) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_TXT, spf.Data, other.(*SPF).Data)
+}
+
 func (spf *SPF) String() string {
 	return fieldToStr(RDF_D_TXT, spf.Data)
 }

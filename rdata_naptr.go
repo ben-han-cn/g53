@@ -35,6 +35,36 @@ func (naptr *NAPTR) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_NAME, naptr.Replacement, buffer)
 }
 
+func (naptr *NAPTR) Compare(other Rdata) int {
+	otherNAPTR := other.(*NAPTR)
+	order := fieldCompare(RDF_C_UINT16, naptr.Order, otherNAPTR.Order)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT16, naptr.Preference, otherNAPTR.Preference)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_BYTE_BINARY, []byte(naptr.Flags), []byte(otherNAPTR.Flags))
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_BYTE_BINARY, []byte(naptr.Services), []byte(otherNAPTR.Services))
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_BYTE_BINARY, []byte(naptr.Regexp), []byte(otherNAPTR.Regexp))
+	if order != 0 {
+		return order
+	}
+
+	return fieldCompare(RDF_C_NAME, naptr.Replacement, otherNAPTR.Replacement)
+}
+
 func (naptr *NAPTR) String() string {
 	var buf bytes.Buffer
 	buf.WriteString(fieldToStr(RDF_D_INT, naptr.Order))

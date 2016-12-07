@@ -28,6 +28,26 @@ func (srv *SRV) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_NAME, srv.Target, buffer)
 }
 
+func (srv *SRV) Compare(other Rdata) int {
+	otherSRV := other.(*SRV)
+	order := fieldCompare(RDF_C_UINT16, srv.Priority, otherSRV.Priority)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT16, srv.Weight, otherSRV.Weight)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT16, srv.Port, otherSRV.Port)
+	if order != 0 {
+		return order
+	}
+
+	return fieldCompare(RDF_C_NAME, srv.Target, otherSRV.Target)
+}
+
 func (srv *SRV) String() string {
 	var ss []string
 	ss = append(ss, fieldToStr(RDF_D_INT, srv.Priority))

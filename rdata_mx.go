@@ -22,6 +22,16 @@ func (mx *MX) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_NAME, mx.Exchange, buffer)
 }
 
+func (mx *MX) Compare(other Rdata) int {
+	otherMX := other.(*MX)
+	order := fieldCompare(RDF_C_UINT16, mx.Preference, otherMX.Preference)
+	if order != 0 {
+		return order
+	}
+
+	return fieldCompare(RDF_C_NAME, mx.Exchange, otherMX.Exchange)
+}
+
 func (mx *MX) String() string {
 	return strings.Join([]string{
 		fieldToStr(RDF_D_INT, mx.Preference),

@@ -2,9 +2,9 @@ package g53
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -456,6 +456,32 @@ func (rrset *RRset) IsSameRrset(other *RRset) bool {
 	return (rrset.Type == other.Type) && rrset.Name.Equals(other.Name)
 }
 
+func (rrset *RRset) Equals(other *RRset) bool {
+	if rrset.IsSameRrset(other) == false {
+		return false
+	}
+
+	rdataCount := len(rrset.Rdatas)
+	if rdataCount != len(other.Rdatas) {
+		return false
+	}
+
+	if rdataCount == 0 {
+		return true
+	}
+
+	rdatas1 := rrset.Rdatas
+	rdatas2 := other.Rdatas
+	sort.Sort(RdataSlice(rdatas1))
+	sort.Sort(RdataSlice(rdatas2))
+	for i := 0; i < rdataCount; i++ {
+		if rdatas1[i].Compare(rdatas2[i]) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (rrset *RRset) AddRdata(rdata Rdata) {
 	rrset.Rdatas = append(rrset.Rdatas, rdata)
 }
@@ -469,16 +495,12 @@ func (rrset *RRset) RotateRdata() {
 	rrset.Rdatas = append([]Rdata{rrset.Rdatas[rrCount-1]}, rrset.Rdatas[0:rrCount-1]...)
 }
 
-func (rrset *RRset) MarshalJSON() ([]byte, error) {
-	rrs := []map[string]interface{}{}
-	for _, rdata := range rrset.Rdatas {
-		rrs = append(rrs, map[string]interface{}{
-			"name":  rrset.Name.String(true),
-			"type":  rrset.Type.String(),
-			"class": rrset.Class.String(),
-			"ttl":   rrset.Ttl,
-			"rdata": rdata.String(),
-		})
-	}
-	return json.Marshal(rrs)
+type RdataSlice []Rdata
+
+func (rdatas RdataSlice) Len() int           { return len(rdatas) }
+func (rdatas RdataSlice) Swap(i, j int)      { rdatas[i], rdatas[j] = rdatas[j], rdatas[i] }
+func (rdatas RdataSlice) Less(i, j int) bool { return rdatas[i].Compare(rdatas[j]) < 0 }
+
+func (rrset *RRset) SortRdata() {
+	sort.Sort(RdataSlice(rrset.Rdatas))
 }

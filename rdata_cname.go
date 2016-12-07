@@ -21,6 +21,10 @@ func (c *CName) String() string {
 	return fieldToStr(RDF_D_NAME, c.Name)
 }
 
+func (c *CName) Compare(other Rdata) int {
+	return 0 //there should one rr in cname rrset
+}
+
 func CNameFromWire(buffer *util.InputBuffer, ll uint16) (*CName, error) {
 	n, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
 

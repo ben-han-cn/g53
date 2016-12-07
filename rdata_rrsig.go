@@ -44,6 +44,51 @@ func (rrsig *RRSig) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_BINARY, rrsig.Signature, buffer)
 }
 
+func (rrsig *RRSig) Compare(other Rdata) int {
+	otherRRSig := other.(*RRSig)
+	order := fieldCompare(RDF_C_UINT16, uint16(rrsig.Covered), uint16(otherRRSig.Covered))
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT8, rrsig.Algorithm, otherRRSig.Algorithm)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT8, rrsig.Labels, otherRRSig.Labels)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT32, rrsig.OriginalTtl, otherRRSig.OriginalTtl)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT32, rrsig.SigExpire, otherRRSig.SigExpire)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT32, rrsig.Inception, otherRRSig.Inception)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_UINT16, rrsig.Tag, otherRRSig.Tag)
+	if order != 0 {
+		return order
+	}
+
+	order = fieldCompare(RDF_C_NAME, rrsig.Signer, otherRRSig.Signer)
+	if order != 0 {
+		return order
+	}
+
+	return fieldCompare(RDF_C_BINARY, rrsig.Signature, otherRRSig.Signature)
+}
+
 func (rrsig *RRSig) String() string {
 	var buf bytes.Buffer
 	buf.WriteString(fieldToStr(RDF_D_STR, rrsig.Covered.String()))

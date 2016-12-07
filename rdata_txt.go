@@ -18,6 +18,10 @@ func (txt *Txt) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_TXT, txt.Data, buffer)
 }
 
+func (txt *Txt) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_TXT, txt.Data, other.(*Txt).Data)
+}
+
 func (txt *Txt) String() string {
 	return fieldToStr(RDF_D_TXT, txt.Data)
 }

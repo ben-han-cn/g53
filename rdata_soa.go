@@ -37,6 +37,10 @@ func (soa *SOA) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_UINT32, soa.Minimum, buffer)
 }
 
+func (soa *SOA) Compare(other Rdata) int {
+	return 0 //soa rrset should has one rr
+}
+
 func (soa *SOA) String() string {
 	var ss []string
 	ss = append(ss, fieldToStr(RDF_D_NAME, soa.MName))

@@ -76,3 +76,46 @@ func TestRRsetRoateRdata(t *testing.T) {
 	Equal(t, rrset.Rdatas[1].String(), ra2.String())
 	Equal(t, rrset.Rdatas[2].String(), ra3.String())
 }
+
+func TestRRsetSortRdata(t *testing.T) {
+	ra1, _ := AFromString("1.1.1.1")
+	ra2, _ := AFromString("2.2.2.2")
+	ra3, _ := AFromString("3.3.3.3")
+	n, _ := NameFromString("test.example.com.")
+	rrset := &RRset{
+		Name:   n,
+		Type:   RR_A,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(3600),
+		Rdatas: []Rdata{ra3, ra2, ra1},
+	}
+
+	rrset.SortRdata()
+	Equal(t, rrset.Rdatas[0].String(), ra1.String())
+	Equal(t, rrset.Rdatas[1].String(), ra2.String())
+	Equal(t, rrset.Rdatas[2].String(), ra3.String())
+}
+
+func TestRRsetEquals(t *testing.T) {
+	ra1, _ := NSFromString("a.com.")
+	ra2, _ := NSFromString("b.com.")
+	ra3, _ := NSFromString("c.com.")
+	n, _ := NameFromString("test.example.com.")
+	rrset1 := &RRset{
+		Name:   n,
+		Type:   RR_NS,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(3600),
+		Rdatas: []Rdata{ra3, ra2, ra1},
+	}
+
+	ra4, _ := NSFromString("C.com.")
+	rrset2 := &RRset{
+		Name:   n,
+		Type:   RR_NS,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(3600),
+		Rdatas: []Rdata{ra4, ra2, ra1},
+	}
+	Assert(t, rrset1.Equals(rrset2), "rrset1 should equl rrset2")
+}

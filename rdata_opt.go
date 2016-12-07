@@ -18,6 +18,10 @@ func (opt *OPT) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_BINARY, opt.Data, buffer)
 }
 
+func (opt *OPT) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_BINARY, opt.Data, other.(*OPT).Data)
+}
+
 func (opt *OPT) String() string {
 	return fieldToStr(RDF_D_HEX, opt.Data)
 }

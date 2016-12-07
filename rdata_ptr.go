@@ -17,6 +17,10 @@ func (p *PTR) ToWire(buffer *util.OutputBuffer) {
 	fieldToWire(RDF_C_NAME, p.Name, buffer)
 }
 
+func (p *PTR) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_NAME, p.Name, other.(*PTR).Name)
+}
+
 func (p *PTR) String() string {
 	return fieldToStr(RDF_D_NAME, p.Name)
 }
