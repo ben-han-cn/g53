@@ -2,8 +2,12 @@ package g53
 
 import (
 	"bytes"
+	"errors"
+
 	"g53/util"
 )
+
+var ErrQueryQuestionIsNotValid = errors.New("query should have exact one question")
 
 type SectionType int
 
@@ -67,6 +71,8 @@ func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
 			return nil, err
 		}
 		m.Question = q
+	} else if h.Opcode == OP_QUERY {
+		return nil, ErrQueryQuestionIsNotValid
 	}
 
 	for i := 0; i < SectionCount; i++ {
@@ -242,10 +248,11 @@ func (m *Message) AddRRset(st SectionType, rrset *RRset) {
 	m.Sections[st] = append(m.Sections[st], rrset)
 }
 
-func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, rdata Rdata, merge bool) {
+func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) {
 	if merge {
 		if i := m.rrsetIndex(st, name, typ, class); i != -1 {
 			m.Sections[st][i].AddRdata(rdata)
+			m.Sections[st][i].Ttl = ttl
 			return
 		}
 	}
@@ -253,6 +260,7 @@ func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, r
 		Name:   name,
 		Type:   typ,
 		Class:  class,
+		Ttl:    ttl,
 		Rdatas: []Rdata{rdata},
 	}
 	m.AddRRset(st, newRRset)

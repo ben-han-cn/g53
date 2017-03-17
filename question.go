@@ -50,3 +50,9 @@ func (q *Question) ToWire(buffer *util.OutputBuffer) {
 func (q *Question) String() string {
 	return strings.Join([]string{q.Name.String(false), q.Class.String(), q.Type.String()}, " ")
 }
+
+func (q *Question) Equals(o *Question) bool {
+	return q.Name.CaseSensitiveEquals(o.Name) &&
+		q.Type == o.Type &&
+		q.Class == o.Class
+}

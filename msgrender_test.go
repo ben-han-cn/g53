@@ -47,3 +47,14 @@ func TestWriteName(t *testing.T) {
 	render.WriteName(aExampleOrg, true)
 	WireMatch(t, raw, render.Data())
 }
+
+func BenchmarkRenderWriteName(b *testing.B) {
+	aExampleCom, _ := NewName("a.example.com", true)
+	bExampleCom, _ := NewName("b.Example.com", true)
+	render := NewMsgRender()
+	for i := 0; i < b.N; i++ {
+		render.WriteName(aExampleCom, true)
+		render.WriteName(bExampleCom, true)
+		render.Clear()
+	}
+}

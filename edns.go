@@ -155,3 +155,7 @@ func (e *EDNS) String() string {
 	}
 	return strings.Join(desc, "\n") + "\n"
 }
+
+func (e *EDNS) CleanOption() {
+	e.Options = []Option{}
+}

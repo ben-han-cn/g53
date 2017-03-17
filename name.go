@@ -265,38 +265,6 @@ func NewName(name string, downcase bool) (*Name, error) {
 	}
 }
 
-func SubName(name string, nameLen uint, origin *Name, downcase bool) (*Name, error) {
-	if nameLen == 0 {
-		return nil, errors.New("no data for sub name")
-	}
-
-	isAbsolute := name[len(name)-1] == '.'
-	if isAbsolute == false && origin == nil {
-		return nil, errors.New("no origin for relative name")
-	}
-
-	raw, offsets, err := stringParse([]byte(name), 0, nameLen, downcase)
-	if err != nil {
-		return nil, err
-	}
-
-	if isAbsolute == false {
-		raw = append(raw[0:len(raw)-1], origin.raw...)
-		lastOffset := offsets[len(offsets)-1]
-		offsetCount := len(offsets)
-		offsets = append(offsets[0:len(offsets)-1], origin.offsets...)
-		for i := offsetCount - 1; i < len(offsets); i++ {
-			offsets[i] = offsets[i] + byte(lastOffset)
-		}
-	}
-
-	if len(offsets) > MAX_LABELS || len(raw) > MAX_WIRE {
-		return nil, errors.New("combined name is too long")
-	}
-
-	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
-}
-
 const (
 	fwStart uint = iota
 	fwOrdinary
@@ -305,6 +273,14 @@ const (
 
 func NameFromString(s string) (*Name, error) {
 	return NewName(s, true)
+}
+
+func NameFromStringUnsafe(s string) *Name {
+	name, err := NewName(s, true)
+	if err != nil {
+		panic("unvalid name" + s)
+	}
+	return name
 }
 
 func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
@@ -397,13 +373,10 @@ func (name *Name) LabelCount() uint {
 }
 
 func (name *Name) String(omitFinalDot bool) string {
-	labels := name.labelCount
-	count := MAX_LABEL_LEN + 1
 
 	var result bytes.Buffer
 	for i := uint(0); i < name.length; {
-		labels--
-		count = int(name.raw[i])
+		count := int(name.raw[i])
 		i++
 
 		if count == 0 {
@@ -482,11 +455,7 @@ func (n1 *Name) Compare(n2 *Name, caseSensitive bool) NameComparisonResult {
 			}
 
 			if chdiff != 0 {
-				if nlabels == 0 {
-					return NameComparisonResult{chdiff, nlabels, NONE}
-				} else {
-					return NameComparisonResult{chdiff, nlabels, COMMONANCESTOR}
-				}
+				return NameComparisonResult{chdiff, nlabels, COMMONANCESTOR}
 			}
 			mincount--
 			ps1++
@@ -510,6 +479,13 @@ func (n1 *Name) Compare(n2 *Name, caseSensitive bool) NameComparisonResult {
 	} else {
 		return NameComparisonResult{ldiff, nlabels, EQUAL}
 	}
+}
+
+func (n1 *Name) CaseSensitiveEquals(n2 *Name) bool {
+	if n1.length != n2.length || n1.labelCount != n2.labelCount {
+		return false
+	}
+	return bytes.Compare(n1.raw, n2.raw) == 0
 }
 
 func (n1 *Name) Equals(n2 *Name) bool {
@@ -541,29 +517,48 @@ func (name *Name) IsWildCard() bool {
 	return name.length >= 2 && name.raw[0] == 1 && name.raw[1] == '*'
 }
 
-func (name *Name) Concat(suffix *Name) (*Name, error) {
-	finalLength := name.length + suffix.length - 1
-	if finalLength > MAX_WIRE {
-		return nil, errors.New("names are too long to concat")
+func (name *Name) Concat(suffixes ...*Name) (*Name, error) {
+	finalLength := name.length
+	finalLabelCount := name.labelCount
+	suffixCount := uint(len(suffixes))
+	for _, suffix := range suffixes {
+		finalLength += suffix.length - 1
+		finalLabelCount += suffix.labelCount - 1
 	}
 
-	finalLabelCount := name.labelCount + suffix.labelCount - 1
-	if finalLabelCount > MAX_LABELS {
+	if finalLength > MAX_WIRE {
+		return nil, errors.New("names are too long to concat")
+	} else if finalLabelCount > MAX_LABELS {
 		return nil, errors.New("names has too many labels to concat")
 	}
 
-	raw := make([]byte, 0, finalLength)
-	raw = append(raw, name.raw[0:name.length-1]...)
-	raw = append(raw, suffix.raw...)
+	raw := make([]byte, finalLength)
+	copy(raw, name.raw[0:name.length-1])
+	copyedLen := name.length - 1
+	for _, suffix := range suffixes[:suffixCount-1] {
+		copy(raw[copyedLen:], suffix.raw[0:suffix.length-1])
+		copyedLen += suffix.length - 1
+	}
+	copy(raw[copyedLen:], suffixes[suffixCount-1].raw)
 
-	offsets := make([]byte, 0, finalLabelCount)
-	lastOffset := name.offsets[name.labelCount-1]
-	offsets = append(offsets, name.offsets[0:name.labelCount-1]...)
-	offsets = append(offsets, suffix.offsets...)
-	for i := name.labelCount - 1; i < finalLabelCount; i++ {
-		offsets[i] += byte(lastOffset)
+	offsets := make([]byte, finalLabelCount)
+	copy(offsets, name.offsets)
+	copyedLen = name.labelCount
+	for _, suffix := range suffixes {
+		lastOffset := offsets[copyedLen-1]
+		copy(offsets[copyedLen:], suffix.offsets[1:suffix.labelCount])
+		for i := copyedLen; i < copyedLen+suffix.labelCount-1; i++ {
+			offsets[i] += byte(lastOffset)
+		}
+		copyedLen += suffix.labelCount - 1
 	}
 	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+}
+
+//"a.b.c" Subtrace "b.c" == "a"
+//caller should make sure name endWith suffix
+func (name *Name) Subtract(suffix *Name) (*Name, error) {
+	return name.Split(0, name.LabelCount()-suffix.LabelCount())
 }
 
 func (name *Name) Reverse() *Name {
@@ -571,13 +566,13 @@ func (name *Name) Reverse() *Name {
 		return Root
 	}
 
-	raw := make([]byte, 0, name.length)
+	raw := make([]byte, name.length-1, name.length)
 	offsets := make([]byte, 0, name.labelCount)
 	labelLen := byte(0)
 	for i := int(name.labelCount - 2); i >= 0; i-- {
 		labelStart := name.offsets[i]
 		labelEnd := name.offsets[i+1]
-		raw = append(raw, name.raw[labelStart:labelEnd]...)
+		copy(raw[labelLen:], name.raw[labelStart:labelEnd])
 		offsets = append(offsets, labelLen)
 		labelLen += labelEnd - labelStart
 	}
@@ -676,14 +671,8 @@ func (name *Name) StripRight(c uint) (*Name, error) {
 	return &Name{raw, offsets, uint(endPos + 1), name.labelCount - c}, nil
 }
 
-const MAX_HASH_LEN = 16
-
 func (name *Name) Hash(caseSensitive bool) uint32 {
 	hashLen := name.length
-	if hashLen > MAX_HASH_LEN {
-		hashLen = MAX_HASH_LEN
-	}
-
 	hash := uint32(0)
 	if caseSensitive {
 		for i := uint(0); i < hashLen; i++ {
@@ -707,4 +696,19 @@ func (name *Name) ToWire(buffer *util.OutputBuffer) {
 
 func (name *Name) IsRoot() bool {
 	return name.LabelCount() == 1
+}
+
+func (name *Name) IsSubDomain(parent *Name) bool {
+	if name.length < parent.length || name.labelCount < parent.labelCount {
+		return false
+	}
+
+	i := name.length - 1
+	for j := parent.length - 1; j > 0; j -= 1 {
+		if maptolower[parent.raw[j]] != maptolower[name.raw[i]] {
+			return false
+		}
+		i -= 1
+	}
+	return true
 }

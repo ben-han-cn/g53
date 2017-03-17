@@ -11,7 +11,15 @@ type InputBuffer struct {
 }
 
 func NewInputBuffer(bytes []byte) *InputBuffer {
-	return &InputBuffer{0, bytes, uint(len(bytes))}
+	buf := &InputBuffer{}
+	buf.SetData(bytes)
+	return buf
+}
+
+func (buf *InputBuffer) SetData(bytes []byte) {
+	buf.pos = 0
+	buf.data = bytes
+	buf.datalen = uint(len(bytes))
 }
 
 func (buf *InputBuffer) Len() uint {
@@ -140,7 +148,7 @@ func (out *OutputBuffer) ensureSpace(length uint) {
 }
 
 func (out *OutputBuffer) Clear() {
-	out.data = out.data[0:0]
+	out.data = out.data[:0]
 }
 
 func (out *OutputBuffer) WriteUint8(data uint8) {

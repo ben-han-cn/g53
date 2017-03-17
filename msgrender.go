@@ -28,7 +28,6 @@ func (c *nameComparator) compare(item *offsetItem) bool {
 	}
 
 	itemPos := item.pos
-
 	var itemLabelLen uint16 = 0
 	for i := uint16(0); i < item.l; i++ {
 		itemLabelLen, itemPos = nextPos(c.buffer, itemPos, itemLabelLen)
