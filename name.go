@@ -215,16 +215,16 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 			digits++
 			if digits == 3 {
 				if value > 255 {
-					return nil, nil, errors.New("escaped decimal is to larg")
+					return nil, nil, errors.New("escaped decimal is too large")
 				}
 				count++
 				if count > MAX_LABEL_LEN {
 					return nil, nil, errors.New("lable is too long")
 				}
 				if downcase {
-					data = append(data, maptolower[c])
+					data = append(data, maptolower[value])
 				} else {
-					data = append(data, c)
+					data = append(data, byte(value))
 				}
 				state = ftOrdinary
 			}
@@ -373,7 +373,6 @@ func (name *Name) LabelCount() uint {
 }
 
 func (name *Name) String(omitFinalDot bool) string {
-
 	var result bytes.Buffer
 	for i := uint(0); i < name.length; {
 		count := int(name.raw[i])

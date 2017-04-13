@@ -1,8 +1,21 @@
 package g53
 
 import (
+	"bytes"
 	"testing"
 )
+
+func TestDigitualNameParse(t *testing.T) {
+	digitalName := NameFromStringUnsafe("ab.\\208L/\003\\248\236/\003")
+	if bytes.Compare(digitalName.raw, []byte{2, 97, 98, 8, 208, 108, 47, 3, 248, 158, 47, 3, 0}) != 0 {
+		t.Errorf("parse string failed")
+	}
+
+	desiredString := "ab.\\208l/\\003\\248\\158/\\003"
+	if digitalName.String(true) != desiredString {
+		t.Errorf("digital name parse then to string failed")
+	}
+}
 
 func TestNameConcat(t *testing.T) {
 	name, _ := Root.Concat(
