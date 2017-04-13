@@ -71,7 +71,7 @@ func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
 			return nil, err
 		}
 		m.Question = q
-	} else if h.Opcode == OP_QUERY {
+	} else if h.Opcode == OP_QUERY && h.Rcode != R_FORMERR {
 		return nil, ErrQueryQuestionIsNotValid
 	}
 

@@ -207,7 +207,7 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 			state = ftEscdecimal
 			goto again
 		case ftEscdecimal:
-			if isDigit(c & 0xff) {
+			if isDigit(c&0xff) == false {
 				return nil, nil, errors.New("mixture of escaped digit and non-digit")
 			}
 			value = value * 10
