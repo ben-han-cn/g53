@@ -141,6 +141,13 @@ func TestNameHash(t *testing.T) {
 	if name1.Hash(false) == name3.Hash(false) {
 		t.Errorf("different name should has different hash")
 	}
+
+	/*
+		//name collision
+		if NameFromStringUnsafe("2298.com").Hash(false) == NameFromStringUnsafe("23yy.com").Hash(false) {
+			t.Errorf("different name should has different hash")
+		}
+	*/
 }
 
 func TestNameIsSubdomain(t *testing.T) {

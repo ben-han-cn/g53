@@ -105,7 +105,7 @@ func SOAFromWire(buffer *util.InputBuffer, ll uint16) (*SOA, error) {
 
 func SOAFromString(s string) (*SOA, error) {
 	fields := strings.Split(s, " ")
-	if len(fields) != 6 {
+	if len(fields) != 7 {
 		return nil, errors.New("short of fields for soa")
 	}
 
@@ -139,13 +139,13 @@ func SOAFromString(s string) (*SOA, error) {
 	}
 	retry, _ := i.(int)
 
-	i, err = fieldFromStr(RDF_D_INT, fields[4])
+	i, err = fieldFromStr(RDF_D_INT, fields[5])
 	if err != nil {
 		return nil, err
 	}
 	expire, _ := i.(int)
 
-	i, err = fieldFromStr(RDF_D_INT, fields[5])
+	i, err = fieldFromStr(RDF_D_INT, fields[6])
 	if err != nil {
 		return nil, err
 	}

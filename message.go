@@ -13,8 +13,8 @@ type SectionType int
 
 const (
 	AnswerSection     SectionType = 0
-	AuthSection                   = 1
-	AdditionalSection             = 2
+	AuthSection       SectionType = 1
+	AdditionalSection SectionType = 2
 )
 
 const SectionCount = 3
@@ -40,6 +40,7 @@ func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
 	h := Header{}
 	h.SetFlag(FLAG_RD, true)
 	h.Opcode = OP_QUERY
+	h.Id = util.GenMessageId()
 
 	q := &Question{
 		Name:  name,

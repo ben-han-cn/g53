@@ -10,11 +10,11 @@ import (
 type NameRelation int
 
 const (
-	SUPERDOMAIN NameRelation = iota
-	SUBDOMAIN
-	EQUAL
-	COMMONANCESTOR
-	NONE
+	SUPERDOMAIN    NameRelation = 0
+	SUBDOMAIN      NameRelation = 1
+	EQUAL          NameRelation = 2
+	COMMONANCESTOR NameRelation = 3
+	NONE           NameRelation = 4
 )
 
 const (
@@ -501,10 +501,10 @@ func (n1 *Name) Equals(n2 *Name) bool {
 		pos++
 
 		for count > 0 {
-			count--
 			if maptolower[n1.raw[pos]] != maptolower[n2.raw[pos]] {
 				return false
 			}
+			count--
 			pos++
 		}
 	}

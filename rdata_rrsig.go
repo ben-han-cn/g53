@@ -170,7 +170,7 @@ func RRSigFromString(s string) (*RRSig, error) {
 		return nil, errors.New("short of fields for rrsig")
 	}
 
-	covered, err := fieldFromStr(RDF_D_INT, fields[0])
+	covered, err := TypeFromString(fields[0])
 	if err != nil {
 		return nil, err
 	}
@@ -215,5 +215,5 @@ func RRSigFromString(s string) (*RRSig, error) {
 		return nil, err
 	}
 
-	return &RRSig{RRType(covered.(uint16)), algorithm.(uint8), labels.(uint8), originalTtl.(uint32), sigExpire.(uint32), inception.(uint32), tag.(uint16), signer.(*Name), signature.([]uint8)}, nil
+	return &RRSig{covered, uint8(algorithm.(int)), uint8(labels.(int)), uint32(originalTtl.(int)), uint32(sigExpire.(int)), uint32(inception.(int)), uint16(tag.(int)), signer.(*Name), signature.([]uint8)}, nil
 }

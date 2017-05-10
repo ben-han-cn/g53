@@ -131,6 +131,10 @@ func (tree *DomainTree) nextNode(nodePath *NodeChain) *Node {
 }
 
 func (tree *DomainTree) Insert(name *g53.Name) (*Node, error) {
+	if name.IsRoot() {
+		return tree.insertRoot()
+	}
+
 	parent := NULL_NODE
 	upNode := NULL_NODE
 	current := tree.root
@@ -159,6 +163,9 @@ func (tree *DomainTree) Insert(name *g53.Name) (*Node, error) {
 					parent = NULL_NODE
 					upNode = current
 					name, _ = name.Subtract(current.name)
+					if name.IsRoot() {
+						fmt.Printf("!!!! fuck %s\n", current.name.String(false))
+					}
 					current = current.down
 				} else {
 					// The number of labels in common is fewer
@@ -169,6 +176,10 @@ func (tree *DomainTree) Insert(name *g53.Name) (*Node, error) {
 					commonAncestor, _ := name.Split(
 						name.LabelCount()-uint(comparison.CommonLabelCount),
 						uint(comparison.CommonLabelCount))
+
+					if name.IsRoot() {
+						fmt.Printf("!!!! fuck %s\n", current.name.String(false))
+					}
 					tree.nodeFission(current, commonAncestor)
 				}
 			}
@@ -190,6 +201,24 @@ func (tree *DomainTree) Insert(name *g53.Name) (*Node, error) {
 		parent.right = node
 	}
 	tree.insertRebalance(currentRoot, node)
+	tree.nodeCount += 1
+	return node, nil
+}
+
+func (tree *DomainTree) insertRoot() (*Node, error) {
+	current := tree.root
+	if current != NULL_NODE && current.name.IsRoot() {
+		return current, nil
+	}
+
+	node := NewNode(g53.Root)
+	node.color = BLACK
+	node.down = current
+	if current != NULL_NODE {
+		current.parent = node
+		current.color = BLACK
+	}
+	tree.root = node
 	tree.nodeCount += 1
 	return node, nil
 }

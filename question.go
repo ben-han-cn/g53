@@ -52,7 +52,7 @@ func (q *Question) String() string {
 }
 
 func (q *Question) Equals(o *Question) bool {
-	return q.Name.CaseSensitiveEquals(o.Name) &&
+	return q.Name.Equals(o.Name) &&
 		q.Type == o.Type &&
 		q.Class == o.Class
 }

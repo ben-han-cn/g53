@@ -2,7 +2,6 @@ package domaintree
 
 import (
 	ut "cement/unittest"
-	//"fmt"
 	"testing"
 
 	"g53"
@@ -24,13 +23,8 @@ import (
  *               /   \
  *              o     q
  */
-func nameFromString(n string) *g53.Name {
-	name, _ := g53.NameFromString(n)
-	return name
-}
-
 func treeInsertString(tree *DomainTree, n string) (*Node, error) {
-	return tree.Insert(nameFromString(n))
+	return tree.Insert(g53.NameFromStringUnsafe(n))
 }
 
 func createDomainTree(returnEmptyNode bool) *DomainTree {
@@ -123,7 +117,7 @@ func TestTreeInsert(t *testing.T) {
 
 func TestTreeSearch(t *testing.T) {
 	tree := createDomainTree(false)
-	node, ret := tree.Search(nameFromString("a"))
+	node, ret := tree.Search(g53.NameFromStringUnsafe("a"))
 	ut.Equal(t, ret, ExactMatch)
 	ut.Equal(t, node.name.String(true), "a")
 
@@ -131,7 +125,7 @@ func TestTreeSearch(t *testing.T) {
 		"d.e.f", "y.d.e.f", "x", "m.n",
 	}
 	for _, n := range notExistsNames {
-		_, ret := tree.Search(nameFromString(n))
+		_, ret := tree.Search(g53.NameFromStringUnsafe(n))
 		ut.Equal(t, ret, NotFound)
 	}
 
@@ -140,19 +134,19 @@ func TestTreeSearch(t *testing.T) {
 		"d.e.f", "w.y.d.e.f",
 	}
 	for _, n := range exactMatchNames {
-		_, ret := tree.Search(nameFromString(n))
+		_, ret := tree.Search(g53.NameFromStringUnsafe(n))
 		ut.Equal(t, ret, ExactMatch)
 	}
 
 	// partial match
-	node, ret = tree.Search(nameFromString("m.b"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("m.b"))
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, node.name.String(true), "b")
-	node, ret = tree.Search(nameFromString("m.d.e.f"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("m.d.e.f"))
 	ut.Equal(t, ret, PartialMatch)
 
 	// find rbtnode
-	node, ret = tree.Search(nameFromString("q.w.y.d.e.f"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("q.w.y.d.e.f"))
 	ut.Equal(t, ret, ExactMatch)
 	ut.Equal(t, node.name.String(true), "q")
 }
@@ -186,7 +180,7 @@ func TestTreeNodeCallback(t *testing.T) {
 	ut.Equal(t, err, nil)
 	node.data = 2
 	parentNode, _ := treeInsertString(tree, "example")
-	node, ret := tree.Search(nameFromString("callback.example"))
+	node, ret := tree.Search(g53.NameFromStringUnsafe("callback.example"))
 	ut.Assert(t, node.GetFlag(NF_CALLBACK) == true, "node has set flag")
 	ut.Assert(t, subNode.GetFlag(NF_CALLBACK) == false, "node hasn't set flag")
 	ut.Assert(t, parentNode.GetFlag(NF_CALLBACK) == false, "node hasn't  set flag")
@@ -194,7 +188,7 @@ func TestTreeNodeCallback(t *testing.T) {
 	// check if the callback is called from find()
 	nodePath := NewNodeChain()
 	callbackCalled := false
-	node, ret = tree.SearchExt(nameFromString("sub.callback.example"), nodePath, testCallback, &callbackCalled)
+	node, ret = tree.SearchExt(g53.NameFromStringUnsafe("sub.callback.example"), nodePath, testCallback, &callbackCalled)
 	ut.Equal(t, callbackCalled, true)
 
 	// enable callback at the parent node, but it doesn't have data so
@@ -202,7 +196,7 @@ func TestTreeNodeCallback(t *testing.T) {
 	nodePath2 := NewNodeChain()
 	parentNode.SetFlag(NF_CALLBACK, true)
 	callbackCalled = false
-	node, ret = tree.SearchExt(nameFromString("callback.example"), nodePath2, testCallback, &callbackCalled)
+	node, ret = tree.SearchExt(g53.NameFromStringUnsafe("callback.example"), nodePath2, testCallback, &callbackCalled)
 	ut.Equal(t, ret, ExactMatch)
 	ut.Equal(t, callbackCalled, false)
 }
@@ -213,7 +207,7 @@ func TestTreeNodeChain(t *testing.T) {
 
 	tree := NewDomainTree(true)
 	treeInsertString(tree, ".")
-	_, ret := tree.SearchExt(nameFromString("."), chain, nil, nil)
+	_, ret := tree.SearchExt(g53.NameFromStringUnsafe("."), chain, nil, nil)
 	ut.Equal(t, ret, ExactMatch)
 	ut.Equal(t, chain.GetLevelCount(), 1)
 
@@ -234,7 +228,7 @@ func TestTreeNodeChain(t *testing.T) {
 	 */
 	nodeName := g53.Root
 	for i := 2; i <= g53.MAX_LABELS; i++ {
-		nodeName, _ = nameFromString("a").Concat(nodeName)
+		nodeName, _ = g53.NameFromStringUnsafe("a").Concat(nodeName)
 		_, err := tree.Insert(nodeName)
 		ut.Equal(t, err, nil)
 
@@ -269,7 +263,7 @@ func TestTreeNextNode(t *testing.T) {
 		"p.w.y.d.e.f", "q.w.y.d.e.f", "z.d.e.f", "j.z.d.e.f", "g.h", "i.g.h"}
 	tree := createDomainTree(false)
 	nodePath := NewNodeChain()
-	node, ret := tree.SearchExt(nameFromString(names[0]), nodePath, nil, nil)
+	node, ret := tree.SearchExt(g53.NameFromStringUnsafe(names[0]), nodePath, nil, nil)
 	ut.Equal(t, ret, ExactMatch)
 	for i := 0; i < len(names); i++ {
 		ut.Assert(t, node != nil, "node shouldn't be nil")
@@ -299,20 +293,20 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 	ut.Equal(t, chain.lastCompared, (*Node)(nil))
 
 	emptyTree := NewDomainTree(false)
-	node, ret := emptyTree.SearchExt(nameFromString("a"), chain, nil, nil)
+	node, ret := emptyTree.SearchExt(g53.NameFromStringUnsafe("a"), chain, nil, nil)
 	ut.Equal(t, ret, NotFound)
 	ut.Equal(t, chain.lastCompared, (*Node)(nil))
 	chain.clear()
 
 	tree := createDomainTree(true)
-	node, _ = tree.SearchExt(nameFromString("x.d.e.f"), chain, nil, nil)
+	node, _ = tree.SearchExt(g53.NameFromStringUnsafe("x.d.e.f"), chain, nil, nil)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, 0, 2, g53.EQUAL)
 	chain.clear()
 
-	_, ret = tree.Search(nameFromString("i.g.h"))
+	_, ret = tree.Search(g53.NameFromStringUnsafe("i.g.h"))
 	ut.Equal(t, ret, ExactMatch)
-	node, ret = tree.SearchExt(nameFromString("x.i.g.h"), chain, nil, nil)
+	node, ret = tree.SearchExt(g53.NameFromStringUnsafe("x.i.g.h"), chain, nil, nil)
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, 1, 2, g53.SUBDOMAIN)
@@ -320,9 +314,9 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 
 	// Partial match, search stopped in the subtree below the matching node
 	// after following a left branch.
-	node, ret = tree.Search(nameFromString("x.d.e.f"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("x.d.e.f"))
 	ut.Equal(t, ret, ExactMatch)
-	_, ret = tree.SearchExt(nameFromString("a.d.e.f"), chain, nil, nil)
+	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("a.d.e.f"), chain, nil, nil)
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, -1, 1, g53.COMMONANCESTOR)
@@ -330,9 +324,9 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 
 	// Partial match, search stopped in the subtree below the matching node
 	// after following a right branch.
-	node, ret = tree.Search(nameFromString("z.d.e.f"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("z.d.e.f"))
 	ut.Equal(t, ret, ExactMatch)
-	_, ret = tree.SearchExt(nameFromString("zz.d.e.f"), chain, nil, nil)
+	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("zz.d.e.f"), chain, nil, nil)
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, 1, 1, g53.COMMONANCESTOR)
@@ -340,9 +334,9 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 
 	// Partial match, search stopped at a node for a super domain of the
 	// search name in the subtree below the matching node.
-	node, ret = tree.Search(nameFromString("w.y.d.e.f"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("w.y.d.e.f"))
 	ut.Equal(t, ret, ExactMatch)
-	_, ret = tree.SearchExt(nameFromString("y.d.e.f"), chain, nil, nil)
+	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("y.d.e.f"), chain, nil, nil)
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, -1, 2, g53.SUPERDOMAIN)
@@ -351,16 +345,16 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 	// Partial match, search stopped at a node that share a common ancestor
 	// with the search name in the subtree below the matching node.
 	// (the expected node is the same as the previous case)
-	_, ret = tree.SearchExt(nameFromString("z.y.d.e.f"), chain, nil, nil)
+	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("z.y.d.e.f"), chain, nil, nil)
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, 1, 2, g53.COMMONANCESTOR)
 	chain.clear()
 
 	// Search stops in the highest level after following a left branch.
-	node, ret = tree.Search(nameFromString("c"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("c"))
 	ut.Equal(t, ret, ExactMatch)
-	_, ret = tree.SearchExt(nameFromString("bb"), chain, nil, nil)
+	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("bb"), chain, nil, nil)
 	ut.Equal(t, ret, NotFound)
 	//ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, -1, 1, g53.COMMONANCESTOR)
@@ -368,7 +362,7 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 
 	// Search stops in the highest level after following a right branch.
 	// (the expected node is the same as the previous case)
-	_, ret = tree.SearchExt(nameFromString("d"), chain, nil, nil)
+	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("d"), chain, nil, nil)
 	ut.Equal(t, ret, NotFound)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, 1, 1, g53.COMMONANCESTOR)
@@ -377,20 +371,23 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 
 func TestRootZone(t *testing.T) {
 	tree := NewDomainTree(false)
-	node, _ := treeInsertString(tree, ".")
+	node, _ := treeInsertString(tree, "cn.")
+	node.SetData(0)
+
+	node, _ = treeInsertString(tree, ".")
 	node.SetData(1)
 
-	node, ret := tree.Search(nameFromString("."))
+	node, ret := tree.Search(g53.NameFromStringUnsafe("."))
 	ut.Equal(t, ret, ExactMatch)
 
-	node, ret = tree.Search(nameFromString("example.com"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("example.com"))
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, node.name.String(true), ".")
 	ut.Equal(t, node.Data().(int), 1)
 
 	node, _ = treeInsertString(tree, "com")
 	node.SetData(2)
-	node, ret = tree.Search(nameFromString("example.com"))
+	node, ret = tree.Search(g53.NameFromStringUnsafe("example.com"))
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, node.name.String(true), "com")
 	ut.Equal(t, node.Data().(int), 2)

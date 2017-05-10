@@ -2,8 +2,10 @@ package g53
 
 import (
 	"fmt"
-	"g53/util"
+	"net"
 	"testing"
+
+	"g53/util"
 )
 
 func matchRRsetRaw(t *testing.T, rawData string, rs *RRset) {
@@ -119,4 +121,74 @@ func TestRRsetEquals(t *testing.T) {
 	}
 	Assert(t, rrset1.Equals(rrset2), "rrset1 should equl rrset2")
 	Assert(t, util.StringSliceCompare([]string{rrset1.String()}, []string{rrset2.String()}, false) != 0, "rrset1 has different rdata order with rrset2")
+}
+
+func TestRRsetFromString(t *testing.T) {
+	lines := []string{
+		"example.com.                      1 IN SOA  ns1.example.com. hostmaster.example.com. 2002022401 10800 15 604800 10800",
+		"example.com.                      2 IN NS   ns1.example.com.",
+		"example.com.                      4 IN MX   10 mail.example.com.",
+		"fred.example.com.                 6 IN A    192.168.0.4",
+		"ftp.example.com.                  7 IN CNAME    www.example.com.",
+	}
+
+	soaRdata := &SOA{
+		MName:   NameFromStringUnsafe("ns1.example.com."),
+		RName:   NameFromStringUnsafe("hostmaster.example.com."),
+		Serial:  2002022401,
+		Refresh: 10800,
+		Retry:   15,
+		Expire:  604800,
+		Minimum: 10800,
+	}
+	soa := &RRset{Name: NameFromStringUnsafe("example.com."),
+		Type:   RR_SOA,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(1),
+		Rdatas: []Rdata{soaRdata},
+	}
+
+	ns := &RRset{Name: NameFromStringUnsafe("example.com."),
+		Type:   RR_NS,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(2),
+		Rdatas: []Rdata{&NS{Name: NameFromStringUnsafe("ns1.example.com.")}},
+	}
+
+	mx := &RRset{Name: NameFromStringUnsafe("example.com."),
+		Type:   RR_MX,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(4),
+		Rdatas: []Rdata{&MX{Preference: 10, Exchange: NameFromStringUnsafe("mail.example.com.")}},
+	}
+
+	a := &RRset{Name: NameFromStringUnsafe("fred.example.com."),
+		Type:   RR_A,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(6),
+		Rdatas: []Rdata{&A{Host: net.ParseIP("192.168.0.4").To4()}}}
+
+	cname := &RRset{Name: NameFromStringUnsafe("ftp.example.com."),
+		Type:   RR_CNAME,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(7),
+		Rdatas: []Rdata{&CName{Name: NameFromStringUnsafe("www.example.com.")}}}
+
+	expectedRRset := []*RRset{
+		soa,
+		ns,
+		mx,
+		a,
+		cname,
+	}
+
+	for i, line := range lines {
+		rrset, err := RRsetFromString(line)
+		Assert(t, err == nil, "all rrset is valid")
+		Assert(t, rrset.Equals(expectedRRset[i]), "")
+	}
+
+	rrsigStr := ".           86400   IN  RRSIG   SOA 8 0 86400 20170522050000 20170509040000 14796 . AwEAAaHIwpx3w4VHKi6i1LHnTaWeHCL154Jug0Rtc9ji5qwPXpBo6A5sRv7cSsPQKPIwxLpyCrbJ4mr2L0EPOdvP6z6YfljK2ZmTbogU9aSU2fiq/4wjxbdkLyoDVgtO+JsxNN4bjr4WcWhsmk1Hg93FV9ZpkWb0Tbad8DFqNDzr//kZ"
+	_, err := RRsetFromString(rrsigStr)
+	Assert(t, err == nil, "rrsig is valid %v", err)
 }

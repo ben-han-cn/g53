@@ -66,7 +66,7 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 	}
 }
 
-func RdataFromStr(t RRType, s string) (Rdata, error) {
+func RdataFromString(t RRType, s string) (Rdata, error) {
 	switch t {
 	case RR_A:
 		return AFromString(s)

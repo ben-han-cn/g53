@@ -39,7 +39,7 @@ func (subnet *SubnetOpt) Rend(render *MsgRender) {
 }
 
 func (subnet *SubnetOpt) String() string {
-	return fmt.Sprintf("; CLIENT-SUBNET: %s/%d\n", subnet.ip.String(), subnet.mask)
+	return fmt.Sprintf("; CLIENT-SUBNET: %s/%d/%d\n", subnet.ip.String(), subnet.mask, subnet.scope)
 }
 
 //read from OPTION-LENGTH

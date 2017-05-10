@@ -4,11 +4,20 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"g53/util"
+)
+
+var (
+	ErrUnknownRRType            = errors.New("unknown rr type")
+	ErrUnknownRRClass           = errors.New("unknown rr class")
+	ErrDuplicateRdata           = errors.New("duplicate rdata")
+	ErrRRsetStringFormatInValid = errors.New("rrset string format isn't valid")
+	ErrTtlFormatInvalid         = errors.New("ttl format isn't valid")
 )
 
 type RRTTL uint32
@@ -27,144 +36,144 @@ const (
 	/** a host address */
 	RR_A RRType = 1
 	/** an authoritative name server */
-	RR_NS = 2
+	RR_NS RRType = 2
 	/** the canonical name for an alias */
-	RR_CNAME = 5
+	RR_CNAME RRType = 5
 	/**  marks the start of a zone of authority */
-	RR_SOA = 6
+	RR_SOA RRType = 6
 	/**  a mailbox domain name (EXPERIMENTAL) */
-	RR_MB = 7
+	RR_MB RRType = 7
 	/**  a mail group member (EXPERIMENTAL) */
-	RR_MG = 8
+	RR_MG RRType = 8
 	/**  a mail rename domain name (EXPERIMENTAL) */
-	RR_MR = 9
+	RR_MR RRType = 9
 	/**  a null RR (EXPERIMENTAL) */
-	RR_NULL = 10
+	RR_NULL RRType = 10
 	/**  a well known service description */
-	RR_WKS = 11
+	RR_WKS RRType = 11
 	/**  a domain name pointer */
-	RR_PTR = 12
+	RR_PTR RRType = 12
 	/**  host information */
-	RR_HINFO = 13
+	RR_HINFO RRType = 13
 	/**  mailbox or mail list information */
-	RR_MINFO = 14
+	RR_MINFO RRType = 14
 	/**  mail exchange */
-	RR_MX = 15
+	RR_MX RRType = 15
 	/**  text strings */
-	RR_TXT = 16
+	RR_TXT RRType = 16
 	/**  RFC1183 */
-	RR_RP = 17
+	RR_RP RRType = 17
 	/**  RFC1183 */
-	RR_AFSDB = 18
+	RR_AFSDB RRType = 18
 	/**  RFC1183 */
-	RR_X25 = 19
+	RR_X25 RRType = 19
 	/**  RFC1183 */
-	RR_ISDN = 20
+	RR_ISDN RRType = 20
 	/**  RFC1183 */
-	RR_RT = 21
+	RR_RT RRType = 21
 	/**  RFC1706 */
-	RR_NSAP = 22
+	RR_NSAP RRType = 22
 	/**  RFC1348 */
-	RR_NSAP_PTR = 23
+	RR_NSAP_PTR RRType = 23
 	/**  2535typecode */
-	RR_SIG = 24
+	RR_SIG RRType = 24
 	/**  2535typecode */
-	RR_KEY = 25
+	RR_KEY RRType = 25
 	/**  RFC2163 */
-	RR_PX = 26
+	RR_PX RRType = 26
 	/**  RFC1712 */
-	RR_GPOS = 27
+	RR_GPOS RRType = 27
 	/**  ipv6 address */
-	RR_AAAA = 28
+	RR_AAAA RRType = 28
 	/**  LOC record  RFC1876 */
-	RR_LOC = 29
+	RR_LOC RRType = 29
 	/**  2535typecode */
-	RR_NXT = 30
+	RR_NXT RRType = 30
 	/**  draft-ietf-nimrod-dns-01.txt */
-	RR_EID = 31
+	RR_EID RRType = 31
 	/**  draft-ietf-nimrod-dns-01.txt */
-	RR_NIMLOC = 32
+	RR_NIMLOC RRType = 32
 	/**  SRV record RFC2782 */
-	RR_SRV = 33
+	RR_SRV RRType = 33
 	/**  http://www.jhsoft.com/rfc/af-saa-0069.000.rtf */
-	RR_ATMA = 34
+	RR_ATMA RRType = 34
 	/**  RFC2915 */
-	RR_NAPTR = 35
+	RR_NAPTR RRType = 35
 	/**  RFC2230 */
-	RR_KX = 36
+	RR_KX RRType = 36
 	/**  RFC2538 */
-	RR_CERT = 37
+	RR_CERT RRType = 37
 	/**  RFC2874 */
-	RR_A6 = 38
+	RR_A6 RRType = 38
 	/**  RFC2672 */
-	RR_DNAME = 39
+	RR_DNAME RRType = 39
 	/**  dnsind-kitchen-sink-02.txt */
-	RR_SINK = 40
+	RR_SINK RRType = 40
 	/**  Pseudo OPT record... */
-	RR_OPT = 41
+	RR_OPT RRType = 41
 	/**  RFC3123 */
-	RR_APL = 42
+	RR_APL RRType = 42
 	/**  RFC4034 RFC3658 */
-	RR_DS = 43
+	RR_DS RRType = 43
 	/**  SSH Key Fingerprint */
-	RR_SSHFP = 44 /* RFC 4255 */
+	RR_SSHFP RRType = 44 /* RFC 4255 */
 	/**  IPsec Key */
-	RR_IPSECKEY = 45 /* RFC 4025 */
+	RR_IPSECKEY RRType = 45 /* RFC 4025 */
 	/**  DNSSEC */
-	RR_RRSIG  = 46 /* RFC 4034 */
-	RR_NSEC   = 47 /* RFC 4034 */
-	RR_DNSKEY = 48 /* RFC 4034 */
+	RR_RRSIG  RRType = 46 /* RFC 4034 */
+	RR_NSEC   RRType = 47 /* RFC 4034 */
+	RR_DNSKEY RRType = 48 /* RFC 4034 */
 
-	RR_DHCID = 49 /* RFC 4701 */
+	RR_DHCID RRType = 49 /* RFC 4701 */
 	/* NSEC3 */
-	RR_NSEC3      = 50 /* RFC 5155 */
-	RR_NSEC3PARAM = 51 /* RFC 5155 */
-	RR_TLSA       = 52 /* RFC 6698 */
+	RR_NSEC3      RRType = 50 /* RFC 5155 */
+	RR_NSEC3PARAM RRType = 51 /* RFC 5155 */
+	RR_TLSA       RRType = 52 /* RFC 6698 */
 
-	RR_HIP = 55 /* RFC 5205 */
+	RR_HIP RRType = 55 /* RFC 5205 */
 
 	/** draft-reid-dnsext-zs */
-	RR_NINFO = 56
+	RR_NINFO RRType = 56
 	/** draft-reid-dnsext-rkey */
-	RR_RKEY = 57
+	RR_RKEY RRType = 57
 	/** draft-ietf-dnsop-trust-history */
-	RR_TALINK = 58
+	RR_TALINK RRType = 58
 	/** draft-barwood-dnsop-ds-publis */
-	RR_CDS = 59
+	RR_CDS RRType = 59
 
-	RR_SPF = 99 /* RFC 4408 */
+	RR_SPF RRType = 99 /* RFC 4408 */
 
-	RR_UINFO  = 100
-	RR_UID    = 101
-	RR_GID    = 102
-	RR_UNSPEC = 103
+	RR_UINFO  RRType = 100
+	RR_UID    RRType = 101
+	RR_GID    RRType = 102
+	RR_UNSPEC RRType = 103
 
-	RR_NID = 104 /* RFC 6742 */
-	RR_L32 = 105 /* RFC 6742 */
-	RR_L64 = 106 /* RFC 6742 */
-	RR_LP  = 107 /* RFC 6742 */
+	RR_NID RRType = 104 /* RFC 6742 */
+	RR_L32 RRType = 105 /* RFC 6742 */
+	RR_L64 RRType = 106 /* RFC 6742 */
+	RR_LP  RRType = 107 /* RFC 6742 */
 
-	RR_EUI48 = 108 /* RFC 7043 */
-	RR_EUI64 = 109 /* RFC 7043 */
+	RR_EUI48 RRType = 108 /* RFC 7043 */
+	RR_EUI64 RRType = 109 /* RFC 7043 */
 
-	RR_TKEY = 249 /* RFC 2930 */
-	RR_TSIG = 250
-	RR_IXFR = 251
-	RR_AXFR = 252
+	RR_TKEY RRType = 249 /* RFC 2930 */
+	RR_TSIG RRType = 250
+	RR_IXFR RRType = 251
+	RR_AXFR RRType = 252
 	/**  A request for mailbox-related records (MB MG or MR) */
-	RR_MAILB = 253
+	RR_MAILB RRType = 253
 	/**  A request for mail agent RRs (Obsolete - see MX) */
-	RR_MAILA = 254
+	RR_MAILA RRType = 254
 	/**  any type (wildcard) */
-	RR_ANY = 255
+	RR_ANY RRType = 255
 	/** draft-faltstrom-uri-06 */
-	RR_URI = 256
-	RR_CAA = 257 /* RFC 6844 */
+	RR_URI RRType = 256
+	RR_CAA RRType = 257 /* RFC 6844 */
 
 	/** DNSSEC Trust Authorities */
-	RR_TA = 32768
+	RR_TA RRType = 32768
 	/* RFC 4431 5074 DNSSEC Lookaside Validation */
-	RR_DLV = 32769
+	RR_DLV RRType = 32769
 )
 
 var typeNameMap = map[RRType]string{
@@ -257,10 +266,10 @@ func TTLFromWire(buffer *util.InputBuffer) (RRTTL, error) {
 	return RRTTL(ttl), nil
 }
 
-func TTLFromStr(s string) (RRTTL, error) {
+func TTLFromString(s string) (RRTTL, error) {
 	ttl, err := strconv.Atoi(s)
 	if err != nil {
-		return RRTTL(0), err
+		return RRTTL(0), ErrTtlFormatInvalid
 	}
 
 	return RRTTL(ttl), nil
@@ -287,7 +296,7 @@ func ClassFromWire(buffer *util.InputBuffer) (RRClass, error) {
 	return RRClass(cls), nil
 }
 
-func ClassFromStr(s string) (RRClass, error) {
+func ClassFromString(s string) (RRClass, error) {
 	s = strings.ToUpper(s)
 	switch s {
 	case "IN":
@@ -301,7 +310,7 @@ func ClassFromStr(s string) (RRClass, error) {
 	case "ANY":
 		return CLASS_ANY, nil
 	default:
-		return RRClass(0), errors.New("unknownclass")
+		return RRClass(0), ErrUnknownRRClass
 	}
 }
 
@@ -346,7 +355,7 @@ func TypeFromString(s string) (RRType, error) {
 			return t, nil
 		}
 	}
-	return RRType(0), errors.New("unknown rr type")
+	return RRType(0), ErrUnknownRRType
 }
 
 func (t RRType) Rend(render *MsgRender) {
@@ -374,13 +383,57 @@ type RRset struct {
 	Rdatas []Rdata
 }
 
-func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
-	n, err := NameFromWire(buffer, true)
+//rrset string should be in format
+//example.org. 300 IN NS ns.example.org.
+var rrsetTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)\s*$`)
+
+func RRsetFromString(s string) (*RRset, error) {
+	fields := rrsetTemplate.FindStringSubmatch(s)
+	if len(fields) != 6 {
+		return nil, ErrRRsetStringFormatInValid
+	}
+
+	name, err := NameFromString(fields[1])
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := TypeFromWire(buffer)
+	ttl, err := TTLFromString(fields[2])
+	if err != nil {
+		return nil, err
+	}
+
+	cls, err := ClassFromString(fields[3])
+	if err != nil {
+		return nil, err
+	}
+
+	typ, err := TypeFromString(fields[4])
+	if err != nil {
+		return nil, err
+	}
+
+	rdata, err := RdataFromString(typ, fields[5])
+	if err != nil {
+		return nil, err
+	}
+
+	return &RRset{
+		Name:   name,
+		Type:   typ,
+		Class:  cls,
+		Ttl:    ttl,
+		Rdatas: []Rdata{rdata},
+	}, nil
+}
+
+func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
+	name, err := NameFromWire(buffer, true)
+	if err != nil {
+		return nil, err
+	}
+
+	typ, err := TypeFromWire(buffer)
 	if err != nil {
 		return nil, err
 	}
@@ -395,14 +448,14 @@ func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
 		return nil, err
 	}
 
-	rdata, err := RdataFromWire(t, buffer)
+	rdata, err := RdataFromWire(typ, buffer)
 	if err != nil {
 		return nil, err
 	}
 
 	return &RRset{
-		Name:   n,
-		Type:   t,
+		Name:   name,
+		Type:   typ,
 		Class:  cls,
 		Ttl:    ttl,
 		Rdatas: []Rdata{rdata},
@@ -482,8 +535,15 @@ func (rrset *RRset) Equals(other *RRset) bool {
 	return true
 }
 
-func (rrset *RRset) AddRdata(rdata Rdata) {
+func (rrset *RRset) AddRdata(rdata Rdata) error {
+	for _, oldRdata := range rrset.Rdatas {
+		if oldRdata.Compare(rdata) == 0 {
+			return ErrDuplicateRdata
+		}
+	}
+
 	rrset.Rdatas = append(rrset.Rdatas, rdata)
+	return nil
 }
 
 func (rrset *RRset) RotateRdata() {

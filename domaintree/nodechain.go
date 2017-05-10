@@ -72,3 +72,7 @@ func (c *NodeChain) push(node *Node) {
 	}
 	c.nodes = append(c.nodes, node)
 }
+
+func (c *NodeChain) LastComparison() g53.NameComparisonResult {
+	return c.lastComparison
+}
