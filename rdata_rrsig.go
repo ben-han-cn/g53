@@ -3,7 +3,7 @@ package g53
 import (
 	"bytes"
 	"errors"
-	"strings"
+	"regexp"
 
 	"g53/util"
 )
@@ -91,23 +91,23 @@ func (rrsig *RRSig) Compare(other Rdata) int {
 
 func (rrsig *RRSig) String() string {
 	var buf bytes.Buffer
-	buf.WriteString(fieldToStr(RDF_D_STR, rrsig.Covered.String()))
+	buf.WriteString(fieldToString(RDF_D_STR, rrsig.Covered.String()))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, rrsig.Algorithm))
+	buf.WriteString(fieldToString(RDF_D_INT, rrsig.Algorithm))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, rrsig.Labels))
+	buf.WriteString(fieldToString(RDF_D_INT, rrsig.Labels))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, rrsig.OriginalTtl))
+	buf.WriteString(fieldToString(RDF_D_INT, rrsig.OriginalTtl))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, rrsig.SigExpire))
+	buf.WriteString(fieldToString(RDF_D_INT, rrsig.SigExpire))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, rrsig.Inception))
+	buf.WriteString(fieldToString(RDF_D_INT, rrsig.Inception))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, rrsig.Tag))
+	buf.WriteString(fieldToString(RDF_D_INT, rrsig.Tag))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_NAME, rrsig.Signer))
+	buf.WriteString(fieldToString(RDF_D_NAME, rrsig.Signer))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_B64, rrsig.Signature))
+	buf.WriteString(fieldToString(RDF_D_B64, rrsig.Signature))
 	return buf.String()
 }
 
@@ -164,53 +164,56 @@ func RRSigFromWire(buffer *util.InputBuffer, ll uint16) (*RRSig, error) {
 	return &RRSig{RRType(covered.(uint16)), algorithm.(uint8), labels.(uint8), originalTtl.(uint32), sigExpire.(uint32), inception.(uint32), tag.(uint16), signer.(*Name), signature.([]uint8)}, nil
 }
 
+var rrsigRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)
+
 func RRSigFromString(s string) (*RRSig, error) {
-	fields := strings.Split(s, " ")
-	if len(fields) != 9 {
+	fields := rrsigRdataTemplate.FindStringSubmatch(s)
+	if len(fields) != 10 {
 		return nil, errors.New("short of fields for rrsig")
 	}
 
+	fields = fields[1:]
 	covered, err := TypeFromString(fields[0])
 	if err != nil {
 		return nil, err
 	}
 
-	algorithm, err := fieldFromStr(RDF_D_INT, fields[1])
+	algorithm, err := fieldFromString(RDF_D_INT, fields[1])
 	if err != nil {
 		return nil, err
 	}
 
-	labels, err := fieldFromStr(RDF_D_INT, fields[2])
+	labels, err := fieldFromString(RDF_D_INT, fields[2])
 	if err != nil {
 		return nil, err
 	}
 
-	originalTtl, err := fieldFromStr(RDF_D_INT, fields[3])
+	originalTtl, err := fieldFromString(RDF_D_INT, fields[3])
 	if err != nil {
 		return nil, err
 	}
 
-	sigExpire, err := fieldFromStr(RDF_D_INT, fields[4])
+	sigExpire, err := fieldFromString(RDF_D_INT, fields[4])
 	if err != nil {
 		return nil, err
 	}
 
-	inception, err := fieldFromStr(RDF_D_INT, fields[5])
+	inception, err := fieldFromString(RDF_D_INT, fields[5])
 	if err != nil {
 		return nil, err
 	}
 
-	tag, err := fieldFromStr(RDF_D_INT, fields[6])
+	tag, err := fieldFromString(RDF_D_INT, fields[6])
 	if err != nil {
 		return nil, err
 	}
 
-	signer, err := fieldFromStr(RDF_D_NAME, fields[7])
+	signer, err := fieldFromString(RDF_D_NAME, fields[7])
 	if err != nil {
 		return nil, err
 	}
 
-	signature, err := fieldFromStr(RDF_D_B64, fields[8])
+	signature, err := fieldFromString(RDF_D_B64, fields[8])
 	if err != nil {
 		return nil, err
 	}

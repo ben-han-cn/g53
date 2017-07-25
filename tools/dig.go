@@ -17,7 +17,7 @@ var (
 func init() {
 	flag.IntVar(&port, "p", 53, "dns server port default to 53")
 	flag.StringVar(&typ, "t", "a", "query type")
-	flag.StringVar(&subnet, "s", "127.0.0.1", "subnet")
+	flag.StringVar(&subnet, "s", "", "subnet")
 }
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	qn, err := g53.NameFromString(name)
+	qn, err := g53.NewName(name, false)
 	if err != nil {
 		panic("invalid name to query:" + err.Error())
 	}
@@ -47,7 +47,9 @@ func main() {
 	}
 	msg := g53.MakeQuery(qn, qtype, 4096, false)
 	msg.Header.Id = 1200
-	//msg.Edns.AddSubnetV4(subnet)
+	if subnet != "" {
+		msg.Edns.AddSubnetV4(subnet)
+	}
 
 	render := g53.NewMsgRender()
 	msg.Rend(render)

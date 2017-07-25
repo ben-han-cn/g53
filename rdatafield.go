@@ -13,6 +13,14 @@ import (
 	"g53/util"
 )
 
+var (
+	ErrStringIsTooLong       = errors.New("character string is too long")
+	ErrInvalidIPAddr         = errors.New("invalid ip address")
+	ErrQuoteInTxtIsNotInPair = errors.New("quote in text record isn't in pair")
+	ErrDataIsTooShort        = errors.New("raw data isn't long enough")
+	ErrOutOfRange            = errors.New("data out of range")
+)
+
 type RDFCodingType uint8
 type RDFDisplayType uint8
 
@@ -48,13 +56,20 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		if err != nil {
 			return nil, ll, err
 		} else {
-			return n, ll - uint16(buffer.Position()-pos), nil
+			namelen := uint16(buffer.Position() - pos)
+			if ll < namelen {
+				return nil, ll, ErrDataIsTooShort
+			} else {
+				return n, ll - namelen, nil
+			}
 		}
 
 	case RDF_C_UINT8:
 		d, err := buffer.ReadUint8()
 		if err != nil {
 			return nil, ll, err
+		} else if ll < 1 {
+			return nil, ll, ErrDataIsTooShort
 		} else {
 			return d, ll - 1, nil
 		}
@@ -63,6 +78,8 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		d, err := buffer.ReadUint16()
 		if err != nil {
 			return nil, ll, err
+		} else if ll < 2 {
+			return nil, ll, ErrDataIsTooShort
 		} else {
 			return d, ll - 2, nil
 		}
@@ -71,6 +88,8 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		d, err := buffer.ReadUint32()
 		if err != nil {
 			return nil, ll, err
+		} else if ll < 4 {
+			return nil, ll, ErrDataIsTooShort
 		} else {
 			return d, ll - 4, nil
 		}
@@ -79,16 +98,24 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		d, err := buffer.ReadBytes(4)
 		if err != nil {
 			return nil, ll, err
+		} else if ll < 4 {
+			return nil, ll, ErrDataIsTooShort
 		} else {
-			return net.IP(d), ll - 4, nil
+			clone := make([]byte, 4)
+			copy(clone, d)
+			return net.IP(clone), ll - 4, nil
 		}
 
 	case RDF_C_IPV6:
 		d, err := buffer.ReadBytes(16)
 		if err != nil {
 			return nil, ll, err
+		} else if ll < 16 {
+			return nil, ll, ErrDataIsTooShort
 		} else {
-			return net.IP(d), ll - 16, nil
+			clone := make([]byte, 16)
+			copy(clone, d)
+			return net.IP(clone), ll - 16, nil
 		}
 
 	case RDF_C_TXT:
@@ -110,25 +137,37 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		if err != nil {
 			return nil, ll, err
 		}
-		return d, 0, nil
+
+		clone := make([]byte, ll)
+		copy(clone, d)
+		return clone, 0, nil
 
 	case RDF_C_BYTE_BINARY:
 		l, err := buffer.ReadUint8()
 		if err != nil {
 			return nil, ll, err
 		}
+		if ll < 1 {
+			return nil, ll, ErrDataIsTooShort
+		}
 		ll -= 1
 		if uint16(l) > ll {
-			return nil, ll, errors.New("character string is too long")
+			return nil, ll, ErrStringIsTooLong
 		}
 		d, err := buffer.ReadBytes(uint(l))
 		if err != nil {
 			return nil, ll, err
 		}
-		return d, ll - uint16(l), nil
+		if ll < uint16(l) {
+			return nil, ll, ErrDataIsTooShort
+		}
+
+		clone := make([]byte, l)
+		copy(clone, d)
+		return clone, ll - uint16(l), nil
 
 	default:
-		return nil, ll, errors.New("unknown rdata file type")
+		panic("unknown rdata file type")
 	}
 }
 
@@ -267,7 +306,7 @@ func fieldCompare(ct RDFCodingType, data1 interface{}, data2 interface{}) int {
 	return 0
 }
 
-func fieldFromStr(dt RDFDisplayType, s string) (interface{}, error) {
+func fieldFromString(dt RDFDisplayType, s string) (interface{}, error) {
 	switch dt {
 	case RDF_D_NAME:
 		n, err := NameFromString(s)
@@ -288,14 +327,13 @@ func fieldFromStr(dt RDFDisplayType, s string) (interface{}, error) {
 	case RDF_D_IP:
 		ip := net.ParseIP(s)
 		if ip == nil {
-			return nil, errors.New("invalid ip address")
+			return nil, ErrInvalidIPAddr
 		} else {
 			return ip, nil
 		}
 
 	case RDF_D_TXT:
-		d := strings.Split(s, " ")
-		return d, nil
+		return txtStringParse(s)
 
 	case RDF_D_HEX:
 		d, err := util.HexStrToBytes(s)
@@ -325,11 +363,11 @@ func fieldFromStr(dt RDFDisplayType, s string) (interface{}, error) {
 		return s, nil
 
 	default:
-		return nil, errors.New("unknown display type")
+		panic("unknown display type")
 	}
 }
 
-func fieldToStr(dt RDFDisplayType, d interface{}) string {
+func fieldToString(dt RDFDisplayType, d interface{}) string {
 	switch dt {
 	case RDF_D_NAME:
 		n, _ := d.(*Name)
@@ -371,6 +409,38 @@ func fieldToStr(dt RDFDisplayType, d interface{}) string {
 		return s
 
 	default:
-		return ""
+		panic("unknown display type")
+	}
+}
+
+//txt record rdata should be put into qoute
+//it could include multi segment
+func txtStringParse(s string) ([]string, error) {
+	strs := []string{}
+
+	inQuote := false
+	startEscape := false
+	lastPos := 0
+	for i, c := range s {
+		if c == '\\' {
+			startEscape = true
+		} else {
+			if c == '"' && startEscape == false {
+				if inQuote {
+					strs = append(strs, s[lastPos:i])
+					inQuote = false
+				} else {
+					inQuote = true
+					lastPos = i + 1
+				}
+			}
+			startEscape = false
+		}
+	}
+
+	if inQuote {
+		return nil, ErrQuoteInTxtIsNotInPair
+	} else {
+		return strs, nil
 	}
 }

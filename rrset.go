@@ -26,10 +26,10 @@ type RRType uint16
 
 const (
 	CLASS_IN   RRClass = 1
-	CLASS_CH           = 3
-	CLASS_HS           = 4
-	CLASS_NONE         = 254
-	CLASS_ANY          = 255
+	CLASS_CH   RRClass = 3
+	CLASS_HS   RRClass = 4
+	CLASS_NONE RRClass = 254
+	CLASS_ANY  RRClass = 255
 )
 
 const (
@@ -197,7 +197,7 @@ var typeNameMap = map[RRType]string{
 	RR_ISDN:       "isdn",
 	RR_RT:         "rt",
 	RR_NSAP:       "nsap",
-	RR_NSAP_PTR:   "ptr",
+	RR_NSAP_PTR:   "nsap-ptr",
 	RR_SIG:        "sig",
 	RR_KEY:        "key",
 	RR_PX:         "px",
@@ -453,52 +453,77 @@ func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
 		return nil, err
 	}
 
+	var rdatas []Rdata
+	if rdata != nil {
+		rdatas = []Rdata{rdata}
+	}
+
 	return &RRset{
 		Name:   name,
 		Type:   typ,
 		Class:  cls,
 		Ttl:    ttl,
-		Rdatas: []Rdata{rdata},
+		Rdatas: rdatas,
 	}, nil
 }
 
 func (rrset *RRset) Rend(r *MsgRender) {
-	for _, rdata := range rrset.Rdatas {
+	if len(rrset.Rdatas) == 0 {
 		rrset.Name.Rend(r)
 		rrset.Type.Rend(r)
 		rrset.Class.Rend(r)
 		rrset.Ttl.Rend(r)
-		pos := r.Len()
-		r.Skip(2)
-		rdata.Rend(r)
-		r.WriteUint16At(uint16(r.Len()-pos-2), pos)
+		r.WriteUint16(0)
+	} else {
+		for _, rdata := range rrset.Rdatas {
+			rrset.Name.Rend(r)
+			rrset.Type.Rend(r)
+			rrset.Class.Rend(r)
+			rrset.Ttl.Rend(r)
+			pos := r.Len()
+			r.Skip(2)
+			rdata.Rend(r)
+			r.WriteUint16At(uint16(r.Len()-pos-2), pos)
+		}
 	}
 }
 
 func (rrset *RRset) ToWire(buffer *util.OutputBuffer) {
-	for _, rdata := range rrset.Rdatas {
+	if len(rrset.Rdatas) == 0 {
 		rrset.Name.ToWire(buffer)
 		rrset.Type.ToWire(buffer)
 		rrset.Class.ToWire(buffer)
 		rrset.Ttl.ToWire(buffer)
+		buffer.WriteUint16(0)
+	} else {
+		for _, rdata := range rrset.Rdatas {
+			rrset.Name.ToWire(buffer)
+			rrset.Type.ToWire(buffer)
+			rrset.Class.ToWire(buffer)
+			rrset.Ttl.ToWire(buffer)
 
-		pos := buffer.Len()
-		buffer.Skip(2)
-		rdata.ToWire(buffer)
-		buffer.WriteUint16At(uint16(buffer.Len()-pos-2), pos)
+			pos := buffer.Len()
+			buffer.Skip(2)
+			rdata.ToWire(buffer)
+			buffer.WriteUint16At(uint16(buffer.Len()-pos-2), pos)
+		}
 	}
 }
 
 func (rrset *RRset) String() string {
 	header := strings.Join([]string{rrset.Name.String(false), rrset.Ttl.String(), rrset.Class.String(), rrset.Type.String()}, "\t")
-	var buf bytes.Buffer
-	for _, rdata := range rrset.Rdatas {
-		buf.WriteString(header)
-		buf.WriteString("\t")
-		buf.WriteString(rdata.String())
-		buf.WriteString("\n")
+	if len(rrset.Rdatas) == 0 {
+		return header
+	} else {
+		var buf bytes.Buffer
+		for _, rdata := range rrset.Rdatas {
+			buf.WriteString(header)
+			buf.WriteString("\t")
+			buf.WriteString(rdata.String())
+			buf.WriteString("\n")
+		}
+		return buf.String()
 	}
-	return buf.String()
 }
 
 func (rrset *RRset) RrCount() int {

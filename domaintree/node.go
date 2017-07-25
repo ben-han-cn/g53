@@ -8,7 +8,7 @@ type RBNodeFlag uint32
 
 const (
 	NF_CALLBACK RBNodeFlag = 1
-	NF_USER1               = 0x80000000
+	NF_USER1    RBNodeFlag = 0x80000000
 )
 
 type RBNodeColor int
@@ -111,4 +111,29 @@ func (node *Node) Data() interface{} {
 
 func (node *Node) Name() *g53.Name {
 	return node.name
+}
+
+func (node *Node) Clean() {
+	if node == NULL_NODE {
+		return
+	}
+
+	if node.left != NULL_NODE {
+		node.left.Clean()
+		node.left = NULL_NODE
+	}
+
+	if node.right != NULL_NODE {
+		node.right.Clean()
+		node.right = NULL_NODE
+	}
+
+	if node.down != NULL_NODE {
+		node.down.Clean()
+		node.down = NULL_NODE
+	}
+
+	node.parent = NULL_NODE
+	node.name = nil
+	node.data = nil
 }

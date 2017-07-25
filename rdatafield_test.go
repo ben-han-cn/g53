@@ -14,8 +14,8 @@ func TestIPRdataFromAndToWire(t *testing.T) {
 		t.Fatalf("from wire failed with %v", err)
 	}
 
-	if fieldToStr(RDF_D_IP, rd) != "192.0.2.1" {
-		t.Errorf("v4 to string failed expect 192.0.2.1 but %v", fieldToStr(RDF_D_IP, rd))
+	if fieldToString(RDF_D_IP, rd) != "192.0.2.1" {
+		t.Errorf("v4 to string failed expect 192.0.2.1 but %v", fieldToString(RDF_D_IP, rd))
 	}
 
 	if l != 0 {
@@ -34,8 +34,8 @@ func TestIPRdataFromAndToWire(t *testing.T) {
 		t.Fatalf("from wire failed with %v", err)
 	}
 
-	if fieldToStr(RDF_D_IP, rd) != "2001:db8::1234" {
-		t.Errorf("v6 to string failed expect 2001:db8::1234 but %v", fieldToStr(RDF_D_IP, rd))
+	if fieldToString(RDF_D_IP, rd) != "2001:db8::1234" {
+		t.Errorf("v6 to string failed expect 2001:db8::1234 but %v", fieldToString(RDF_D_IP, rd))
 	}
 
 	if l != 0 {
@@ -60,8 +60,8 @@ func TestIntTypeFromToWire(t *testing.T) {
 			t.Fatalf("from wire failed with %v", err)
 		}
 
-		if fieldToStr(RDF_D_INT, rd) != results[i] {
-			t.Errorf("v4 to string failed expect %v but %v", results[i], fieldToStr(RDF_D_INT, rd))
+		if fieldToString(RDF_D_INT, rd) != results[i] {
+			t.Errorf("v4 to string failed expect %v but %v", results[i], fieldToString(RDF_D_INT, rd))
 		}
 
 		if l != 0 {

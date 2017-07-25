@@ -1,9 +1,9 @@
 package domaintree
 
 import (
-	ut "cement/unittest"
 	"testing"
 
+	ut "cement/unittest"
 	"g53"
 )
 
@@ -41,7 +41,7 @@ func createDomainTree(returnEmptyNode bool) *DomainTree {
 }
 
 func TestTreeNodeCount(t *testing.T) {
-	ut.Equal(t, createDomainTree(false).nodeCount, 13)
+	ut.Equal(t, createDomainTree(false).NodeCount(), 13)
 }
 
 func TestTreeInsert(t *testing.T) {
@@ -275,6 +275,31 @@ func TestTreeNextNode(t *testing.T) {
 	ut.Assert(t, node == nil, "node will reach the end")
 }
 
+func TestNonTerminal(t *testing.T) {
+	tree := createDomainTree(true)
+	node, _ := tree.Search(g53.NameFromStringUnsafe("c"))
+	ut.Assert(t, tree.IsNodeNonTerminal(node) == false, "")
+
+	node, _ = tree.Search(g53.NameFromStringUnsafe("d.e.f"))
+	ut.Assert(t, tree.IsNodeNonTerminal(node) == true, "")
+
+	node, _ = tree.Search(g53.NameFromStringUnsafe("w.y.d.e.f"))
+	ut.Assert(t, tree.IsNodeNonTerminal(node) == true, "")
+
+	node, _ = tree.Search(g53.NameFromStringUnsafe("p.w.y.d.e.f"))
+	ut.Assert(t, tree.IsNodeNonTerminal(node) == false, "")
+
+	node.SetData(nil)
+	node, _ = tree.Search(g53.NameFromStringUnsafe("o.w.y.d.e.f"))
+	node.SetData(nil)
+	node, _ = tree.Search(g53.NameFromStringUnsafe("q.w.y.d.e.f"))
+	node.SetData(nil)
+	node, _ = tree.Search(g53.NameFromStringUnsafe("w.y.d.e.f"))
+	ut.Assert(t, tree.IsNodeNonTerminal(node) == false, "")
+	node, _ = tree.Search(g53.NameFromStringUnsafe("d.e.f"))
+	ut.Assert(t, tree.IsNodeNonTerminal(node) == true, "")
+}
+
 func comparisonChecks(t *testing.T, chain *NodeChain, expectedOrder int, expectedCommonLabels int, expectedRelation g53.NameRelation) {
 	if expectedOrder > 0 {
 		ut.Assert(t, chain.lastComparison.Order > 0, "")
@@ -391,4 +416,13 @@ func TestRootZone(t *testing.T) {
 	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, node.name.String(true), "com")
 	ut.Equal(t, node.Data().(int), 2)
+}
+
+func TestTreeForEach(t *testing.T) {
+	tree := createDomainTree(true)
+	nodeCount := 0
+	tree.ForEach(func(n *Node) {
+		nodeCount += 1
+	})
+	ut.Equal(t, tree.nodeCount, nodeCount)
 }

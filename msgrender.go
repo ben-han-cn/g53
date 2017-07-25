@@ -132,7 +132,7 @@ func (r *MsgRender) Clear() {
 	r.truncated = false
 	r.caseSensitive = false
 	for i := uint(0); i < BUCKETS; i++ {
-		r.table[i] = r.table[i][0:RESERVED_ITEMS]
+		r.table[i] = r.table[i][:0]
 	}
 }
 
@@ -142,6 +142,7 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 	ptrOffset := NO_OFFSET
 
 	parent := name
+	var parentBuf util.InputBuffer
 	for nlabelsUncomp = 0; nlabelsUncomp < nlables; nlabelsUncomp++ {
 		if nlabelsUncomp > 0 {
 			parent, _ = parent.StripLeft(1)
@@ -154,7 +155,8 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 
 		r.seqHashs[nlabelsUncomp] = parent.Hash(r.caseSensitive)
 		if compress {
-			ptrOffset = r.findOffset(r.buffer, util.NewInputBuffer(parent.raw), r.seqHashs[nlabelsUncomp], r.caseSensitive)
+			parentBuf.SetData(parent.raw)
+			ptrOffset = r.findOffset(r.buffer, &parentBuf, r.seqHashs[nlabelsUncomp], r.caseSensitive)
 			if ptrOffset != NO_OFFSET {
 				break
 			}

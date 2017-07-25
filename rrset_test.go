@@ -130,6 +130,7 @@ func TestRRsetFromString(t *testing.T) {
 		"example.com.                      4 IN MX   10 mail.example.com.",
 		"fred.example.com.                 6 IN A    192.168.0.4",
 		"ftp.example.com.                  7 IN CNAME    www.example.com.",
+		"1.1.0.10.in-addr.arpa. 100 IN PTR a.com.",
 	}
 
 	soaRdata := &SOA{
@@ -174,17 +175,24 @@ func TestRRsetFromString(t *testing.T) {
 		Ttl:    RRTTL(7),
 		Rdatas: []Rdata{&CName{Name: NameFromStringUnsafe("www.example.com.")}}}
 
+	ptr := &RRset{Name: NameFromStringUnsafe("1.1.0.10.in-addr.arpa."),
+		Type:   RR_PTR,
+		Class:  CLASS_IN,
+		Ttl:    RRTTL(7),
+		Rdatas: []Rdata{&PTR{Name: NameFromStringUnsafe("a.com.")}}}
+
 	expectedRRset := []*RRset{
 		soa,
 		ns,
 		mx,
 		a,
 		cname,
+		ptr,
 	}
 
 	for i, line := range lines {
 		rrset, err := RRsetFromString(line)
-		Assert(t, err == nil, "all rrset is valid")
+		Assert(t, err == nil, "all rrset is valid %v", err)
 		Assert(t, rrset.Equals(expectedRRset[i]), "")
 	}
 

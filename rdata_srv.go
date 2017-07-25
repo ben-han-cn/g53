@@ -2,6 +2,8 @@ package g53
 
 import (
 	"errors"
+	"math"
+	"regexp"
 	"strings"
 
 	"g53/util"
@@ -50,10 +52,10 @@ func (srv *SRV) Compare(other Rdata) int {
 
 func (srv *SRV) String() string {
 	var ss []string
-	ss = append(ss, fieldToStr(RDF_D_INT, srv.Priority))
-	ss = append(ss, fieldToStr(RDF_D_INT, srv.Weight))
-	ss = append(ss, fieldToStr(RDF_D_INT, srv.Port))
-	ss = append(ss, fieldToStr(RDF_D_NAME, srv.Target))
+	ss = append(ss, fieldToString(RDF_D_INT, srv.Priority))
+	ss = append(ss, fieldToString(RDF_D_INT, srv.Weight))
+	ss = append(ss, fieldToString(RDF_D_INT, srv.Port))
+	ss = append(ss, fieldToString(RDF_D_NAME, srv.Target))
 	return strings.Join(ss, " ")
 }
 
@@ -85,35 +87,47 @@ func SRVFromWire(buffer *util.InputBuffer, ll uint16) (*SRV, error) {
 	return &SRV{p.(uint16), w.(uint16), port.(uint16), t.(*Name)}, nil
 }
 
+var srvRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)
+
 func SRVFromString(s string) (*SRV, error) {
-	fields := strings.Split(s, " ")
-	if len(fields) != 4 {
+	fields := srvRdataTemplate.FindStringSubmatch(s)
+	if len(fields) != 5 {
 		return nil, errors.New("short of fields for srv")
 	}
+	fields = fields[1:]
 
-	p, err := fieldFromStr(RDF_D_INT, fields[0])
+	p, err := fieldFromString(RDF_D_INT, fields[0])
 	if err != nil {
 		return nil, err
 	}
-	priority, _ := p.(uint16)
+	priority, _ := p.(int)
+	if priority > math.MaxUint16 {
+		return nil, ErrOutOfRange
+	}
 
-	w, err := fieldFromStr(RDF_D_INT, fields[1])
+	w, err := fieldFromString(RDF_D_INT, fields[1])
 	if err != nil {
 		return nil, err
 	}
-	weight, _ := w.(uint16)
+	weight, _ := w.(int)
+	if weight > math.MaxUint16 {
+		return nil, ErrOutOfRange
+	}
 
-	p, err = fieldFromStr(RDF_D_INT, fields[2])
+	p, err = fieldFromString(RDF_D_INT, fields[2])
 	if err != nil {
 		return nil, err
 	}
-	port, _ := p.(uint16)
+	port, _ := p.(int)
+	if port > math.MaxUint16 {
+		return nil, ErrOutOfRange
+	}
 
-	t, err := fieldFromStr(RDF_D_NAME, fields[3])
+	t, err := fieldFromString(RDF_D_NAME, fields[3])
 	if err != nil {
 		return nil, err
 	}
 	target, _ := t.(*Name)
 
-	return &SRV{priority, weight, port, target}, nil
+	return &SRV{uint16(priority), uint16(weight), uint16(port), target}, nil
 }

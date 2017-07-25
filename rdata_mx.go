@@ -2,6 +2,8 @@ package g53
 
 import (
 	"errors"
+	"math"
+	"regexp"
 	"strings"
 
 	"g53/util"
@@ -34,8 +36,8 @@ func (mx *MX) Compare(other Rdata) int {
 
 func (mx *MX) String() string {
 	return strings.Join([]string{
-		fieldToStr(RDF_D_INT, mx.Preference),
-		fieldToStr(RDF_D_NAME, mx.Exchange)}, " ")
+		fieldToString(RDF_D_INT, mx.Preference),
+		fieldToString(RDF_D_NAME, mx.Exchange)}, " ")
 }
 
 func MXFromWire(buffer *util.InputBuffer, ll uint16) (*MX, error) {
@@ -58,19 +60,25 @@ func MXFromWire(buffer *util.InputBuffer, ll uint16) (*MX, error) {
 	return &MX{preference, exchange}, nil
 }
 
+var mxRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s*$`)
+
 func MXFromString(s string) (*MX, error) {
-	fields := strings.Split(s, " ")
-	if len(fields) != 2 {
+	fields := mxRdataTemplate.FindStringSubmatch(s)
+	if len(fields) != 3 {
 		return nil, errors.New("fields count for mx isn't 2")
 	}
 
-	f, err := fieldFromStr(RDF_D_INT, fields[0])
+	fields = fields[1:]
+	f, err := fieldFromString(RDF_D_INT, fields[0])
 	if err != nil {
 		return nil, err
 	}
 	preference, _ := f.(int)
+	if preference > math.MaxUint16 {
+		return nil, ErrOutOfRange
+	}
 
-	f, err = fieldFromStr(RDF_D_NAME, fields[1])
+	f, err = fieldFromString(RDF_D_NAME, fields[1])
 	if err != nil {
 		return nil, err
 	}

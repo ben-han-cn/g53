@@ -24,7 +24,7 @@ func (aaaa *AAAA) Compare(other Rdata) int {
 }
 
 func (aaaa *AAAA) String() string {
-	return fieldToStr(RDF_D_IP, aaaa.Host)
+	return fieldToString(RDF_D_IP, aaaa.Host)
 }
 
 func AAAAFromWire(buffer *util.InputBuffer, ll uint16) (*AAAA, error) {
@@ -40,7 +40,7 @@ func AAAAFromWire(buffer *util.InputBuffer, ll uint16) (*AAAA, error) {
 }
 
 func AAAAFromString(s string) (*AAAA, error) {
-	f, err := fieldFromStr(RDF_D_IP, s)
+	f, err := fieldFromString(RDF_D_IP, s)
 	if err == nil {
 		host, _ := f.(net.IP)
 		return &AAAA{host}, nil

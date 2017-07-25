@@ -18,7 +18,7 @@ func (c *CName) ToWire(buffer *util.OutputBuffer) {
 }
 
 func (c *CName) String() string {
-	return fieldToStr(RDF_D_NAME, c.Name)
+	return fieldToString(RDF_D_NAME, c.Name)
 }
 
 func (c *CName) Compare(other Rdata) int {
@@ -39,7 +39,7 @@ func CNameFromWire(buffer *util.InputBuffer, ll uint16) (*CName, error) {
 }
 
 func CNameFromString(s string) (*CName, error) {
-	n, err := fieldFromStr(RDF_D_NAME, s)
+	n, err := fieldFromString(RDF_D_NAME, s)
 	if err == nil {
 		name, _ := n.(*Name)
 		return &CName{name}, nil

@@ -3,6 +3,8 @@ package g53
 import (
 	"bytes"
 	"errors"
+	"math"
+	"regexp"
 	"strings"
 
 	"g53/util"
@@ -67,17 +69,17 @@ func (naptr *NAPTR) Compare(other Rdata) int {
 
 func (naptr *NAPTR) String() string {
 	var buf bytes.Buffer
-	buf.WriteString(fieldToStr(RDF_D_INT, naptr.Order))
+	buf.WriteString(fieldToString(RDF_D_INT, naptr.Order))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_INT, naptr.Preference))
+	buf.WriteString(fieldToString(RDF_D_INT, naptr.Preference))
 	buf.WriteString(" ")
-	buf.WriteString(strings.Join([]string{"\"", fieldToStr(RDF_D_STR, naptr.Flags), "\""}, ""))
+	buf.WriteString(strings.Join([]string{"\"", fieldToString(RDF_D_STR, naptr.Flags), "\""}, ""))
 	buf.WriteString(" ")
-	buf.WriteString(strings.Join([]string{"\"", fieldToStr(RDF_D_STR, naptr.Services), "\""}, ""))
+	buf.WriteString(strings.Join([]string{"\"", fieldToString(RDF_D_STR, naptr.Services), "\""}, ""))
 	buf.WriteString(" ")
-	buf.WriteString(strings.Join([]string{"\"", fieldToStr(RDF_D_STR, naptr.Regexp), "\""}, ""))
+	buf.WriteString(strings.Join([]string{"\"", fieldToString(RDF_D_STR, naptr.Regexp), "\""}, ""))
 	buf.WriteString(" ")
-	buf.WriteString(fieldToStr(RDF_D_NAME, naptr.Replacement))
+	buf.WriteString(fieldToString(RDF_D_NAME, naptr.Replacement))
 	return buf.String()
 }
 
@@ -128,47 +130,56 @@ func NAPTRFromWire(buffer *util.InputBuffer, ll uint16) (*NAPTR, error) {
 	return &NAPTR{order, preference, flags, service, regex, replacement}, nil
 }
 
+var naptrRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)
+
 func NAPTRFromString(s string) (*NAPTR, error) {
-	fields := strings.Split(s, " ")
-	if len(fields) != 6 {
+	fields := naptrRdataTemplate.FindStringSubmatch(s)
+	if len(fields) != 7 {
 		return nil, errors.New("short of fields for naptr")
 	}
 
-	o, err := fieldFromStr(RDF_D_INT, fields[0])
+	fields = fields[1:]
+	o, err := fieldFromString(RDF_D_INT, fields[0])
 	if err != nil {
 		return nil, err
 	}
-	order, _ := o.(uint16)
+	order, _ := o.(int)
+	if order > math.MaxUint16 {
+		return nil, ErrOutOfRange
+	}
 
-	p, err := fieldFromStr(RDF_D_INT, fields[1])
+	p, err := fieldFromString(RDF_D_INT, fields[1])
 	if err != nil {
 		return nil, err
 	}
-	preference, _ := p.(uint16)
+	preference, _ := p.(int)
+	if preference > math.MaxUint16 {
+		return nil, ErrOutOfRange
+	}
 
-	f, err := fieldFromStr(RDF_D_STR, fields[2])
+	f, err := fieldFromString(RDF_D_STR, fields[2])
 	if err != nil {
 		return nil, err
 	}
 	flags, _ := f.(string)
 
-	se, err := fieldFromStr(RDF_D_STR, fields[3])
+	se, err := fieldFromString(RDF_D_STR, fields[3])
 	if err != nil {
 		return nil, err
 	}
 	service, _ := se.(string)
 
-	r, err := fieldFromStr(RDF_D_STR, fields[4])
+	r, err := fieldFromString(RDF_D_STR, fields[4])
 	if err != nil {
 		return nil, err
 	}
 	regex, _ := r.(string)
 
-	n, err := fieldFromStr(RDF_D_NAME, fields[5])
+	n, err := fieldFromString(RDF_D_NAME, fields[5])
 	if err != nil {
 		return nil, err
 	}
 	replacement, _ := n.(*Name)
 
-	return &NAPTR{order, preference, flags, service, regex, replacement}, nil
+	return &NAPTR{uint16(order), uint16(preference), flags, service, regex, replacement}, nil
 }

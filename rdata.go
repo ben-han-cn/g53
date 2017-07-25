@@ -32,6 +32,10 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 		return nil, err
 	}
 
+	if rdlen == 0 {
+		return nil, nil
+	}
+
 	switch t {
 	case RR_A:
 		return AFromWire(buffer, rdlen)
@@ -61,6 +65,8 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 		return TxtFromWire(buffer, rdlen)
 	case RR_SPF:
 		return SPFFromWire(buffer, rdlen)
+	case RR_TSIG:
+		return TSIGFromWire(buffer, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}

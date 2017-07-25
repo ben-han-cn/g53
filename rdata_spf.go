@@ -23,7 +23,7 @@ func (spf *SPF) Compare(other Rdata) int {
 }
 
 func (spf *SPF) String() string {
-	return fieldToStr(RDF_D_TXT, spf.Data)
+	return fieldToString(RDF_D_TXT, spf.Data)
 }
 
 func SPFFromWire(buffer *util.InputBuffer, ll uint16) (*SPF, error) {
@@ -39,7 +39,7 @@ func SPFFromWire(buffer *util.InputBuffer, ll uint16) (*SPF, error) {
 }
 
 func SPFFromString(s string) (*SPF, error) {
-	f, err := fieldFromStr(RDF_D_TXT, s)
+	f, err := fieldFromString(RDF_D_TXT, s)
 	if err != nil {
 		return nil, err
 	} else {

@@ -31,13 +31,19 @@ func NewDomainTree(returnEmptyNode bool) *DomainTree {
 	}
 }
 
+func (tree *DomainTree) NodeCount() int {
+	return tree.nodeCount
+}
+
 func (tree *DomainTree) Search(name *g53.Name) (*Node, SearchResult) {
 	nodePath := NewNodeChain()
 	return tree.SearchExt(name, nodePath, nil, nil)
 }
 
-func (tree *DomainTree) clean() {
+func (tree *DomainTree) Clean() {
+	tree.root.Clean()
 	tree.root = NULL_NODE
+	tree.nodeCount = 0
 }
 
 func (tree *DomainTree) SearchExt(name *g53.Name, nodePath *NodeChain, callback NodeCallBack, params interface{}) (*Node, SearchResult) {
@@ -163,9 +169,6 @@ func (tree *DomainTree) Insert(name *g53.Name) (*Node, error) {
 					parent = NULL_NODE
 					upNode = current
 					name, _ = name.Subtract(current.name)
-					if name.IsRoot() {
-						fmt.Printf("!!!! fuck %s\n", current.name.String(false))
-					}
 					current = current.down
 				} else {
 					// The number of labels in common is fewer
@@ -176,10 +179,6 @@ func (tree *DomainTree) Insert(name *g53.Name) (*Node, error) {
 					commonAncestor, _ := name.Split(
 						name.LabelCount()-uint(comparison.CommonLabelCount),
 						uint(comparison.CommonLabelCount))
-
-					if name.IsRoot() {
-						fmt.Printf("!!!! fuck %s\n", current.name.String(false))
-					}
 					tree.nodeFission(current, commonAncestor)
 				}
 			}
@@ -361,4 +360,68 @@ func (tree *DomainTree) indent(depth int) {
 		space[i] = byte(' ')
 	}
 	fmt.Printf("%s", string(space))
+}
+
+func (tree *DomainTree) ForEach(fn func(*Node)) {
+	tree.forEachHelper(tree.root, fn)
+}
+
+func (tree *DomainTree) forEachHelper(node *Node, fn func(*Node)) {
+	if node == NULL_NODE {
+		return
+	}
+
+	if tree.returnEmptyNode || node.IsEmpty() == false {
+		fn(node)
+	}
+
+	tree.forEachHelper(node.left, fn)
+	tree.forEachHelper(node.right, fn)
+	tree.forEachHelper(node.down, fn)
+}
+
+func (tree *DomainTree) IsNodeNonTerminal(node *Node) bool {
+	return tree.anyHelper(node.down, func(n *Node) bool {
+		return n.IsEmpty() == false
+	})
+}
+
+func (tree *DomainTree) All(fn func(*Node) bool) bool {
+	return tree.allHelper(tree.root, fn)
+}
+
+func (tree *DomainTree) allHelper(node *Node, fn func(*Node) bool) bool {
+	if node == NULL_NODE {
+		return true
+	}
+
+	if tree.returnEmptyNode || node.IsEmpty() == false {
+		if fn(node) == false {
+			return false
+		}
+	}
+
+	return tree.allHelper(node.left, fn) &&
+		tree.allHelper(node.right, fn) &&
+		tree.allHelper(node.down, fn)
+}
+
+func (tree *DomainTree) Any(fn func(*Node) bool) bool {
+	return tree.anyHelper(tree.root, fn)
+}
+
+func (tree *DomainTree) anyHelper(node *Node, fn func(*Node) bool) bool {
+	if node == NULL_NODE {
+		return false
+	}
+
+	if tree.returnEmptyNode || node.IsEmpty() == false {
+		if fn(node) == true {
+			return true
+		}
+	}
+
+	return tree.anyHelper(node.left, fn) ||
+		tree.anyHelper(node.right, fn) ||
+		tree.anyHelper(node.down, fn)
 }

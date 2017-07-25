@@ -7,14 +7,10 @@ import (
 
 func TestDigitualNameParse(t *testing.T) {
 	digitalName := NameFromStringUnsafe("ab.\\208L/\003\\248\236/\003")
-	if bytes.Compare(digitalName.raw, []byte{2, 97, 98, 8, 208, 108, 47, 3, 248, 158, 47, 3, 0}) != 0 {
-		t.Errorf("parse string failed")
-	}
+	Assert(t, bytes.Compare(digitalName.raw, []byte{2, 97, 98, 8, 208, 108, 47, 3, 248, 158, 47, 3, 0}) == 0, "parse string failed")
 
 	desiredString := "ab.\\208l/\\003\\248\\158/\\003"
-	if digitalName.String(true) != desiredString {
-		t.Errorf("digital name parse then to string failed")
-	}
+	Assert(t, digitalName.String(true) == desiredString, "digital name parse then to string failed")
 }
 
 func TestNameConcat(t *testing.T) {
@@ -58,51 +54,42 @@ func TestNameSplit(t *testing.T) {
 	n, _ = wwwknetcn.Parent(3)
 	NameEqToStr(t, n, ".")
 
-	if _, err := wwwknetcn.Parent(4); err == nil {
-		t.Errorf("www.knet.cn has no parent leve 4")
-	}
+	_, err := wwwknetcn.Parent(4)
+	Assert(t, err != nil, "www.knet.cn has no parent leve 4")
+
+	n, _ = wwwknetcn.Subtract(Root)
+	Assert(t, n.Equals(wwwknetcn), "name substract root equals itself")
 }
 
 func TestNameCompare(t *testing.T) {
 	knetmixcase, _ := NewName("www.KNET.cN", false)
 	knetdowncase, _ := NewName("www.knet.cn", true)
 	knetmixcase.Downcase()
-	if cr := knetmixcase.Compare(knetdowncase, true); cr.Order != 0 || cr.CommonLabelCount != 4 || cr.Relation != EQUAL {
-		t.Errorf("down case failed:%v", knetmixcase)
-	}
+	cr := knetmixcase.Compare(knetdowncase, true)
+	Assert(t, cr.Order == 0 && cr.CommonLabelCount == 4 && cr.Relation == EQUAL, "down case failed:%v")
 
 	baidu_com, _ := NewName("baidu.com.", true)
 	www_baidu_com, _ := NewName("www.baidu.com", true)
-	if cr := baidu_com.Compare(www_baidu_com, true); cr.Relation != SUPERDOMAIN {
-		t.Errorf("baidu.com is www.baidu.com's superdomain but get %v", cr.Relation)
-	}
+	cr = baidu_com.Compare(www_baidu_com, true)
+	Assert(t, cr.Relation == SUPERDOMAIN, "baidu.com is www.baidu.com's superdomain but get %v", cr.Relation)
 
 	baidu_cn, _ := NewName("baidu.cn.", true)
-	if cr := baidu_com.Compare(baidu_cn, true); cr.Relation != COMMONANCESTOR || cr.CommonLabelCount != 1 {
-		t.Errorf("baidu.com don't have any relationship with baidu.cn", cr.Relation)
-	}
+	cr = baidu_com.Compare(baidu_cn, true)
+	Assert(t, cr.Relation == COMMONANCESTOR && cr.CommonLabelCount == 1, "baidu.com don't have any relationship with baidu.cn")
 }
 
 func TestNameReverse(t *testing.T) {
 	knetcn, _ := NewName("www.knet.Cn", true)
 	knetcnReverse := knetcn.Reverse().String(false)
-	if knetcnReverse != "cn.knet.www." {
-		t.Errorf("www.knet.com reverse should be com.baidu.www. but get %v", knetcnReverse)
-	}
+	Assert(t, knetcnReverse == "cn.knet.www.", "www.knet.com reverse should be com.baidu.www. but get %v", knetcnReverse)
 
-	if Root.Reverse().String(false) != "." {
-		t.Errorf("rootcom reverse should be .")
-	}
+	Assert(t, Root.Reverse().String(false) == ".", "rootcom reverse should be .")
 }
 
 func TestNameStrip(t *testing.T) {
 	knetmixcase, _ := NewName("www.KNET.cN", false)
 	knetWithoutCN, _ := knetmixcase.StripLeft(1)
 	NameEqToStr(t, knetWithoutCN, "knet.cn")
-
-	if knetmixcase.Hash(false) == knetWithoutCN.Hash(false) {
-		t.Errorf("hash should be different if name isn't same")
-	}
 
 	cn, _ := knetmixcase.StripLeft(2)
 	NameEqToStr(t, cn, "cn")
@@ -116,15 +103,8 @@ func TestNameStrip(t *testing.T) {
 	wwwtld, _ := knetmixcase.StripRight(2)
 	NameEqToStr(t, wwwtld, "www")
 
-	wwwString := wwwtld.String(true)
-	if wwwString != "www" {
-		t.Errorf("wwwString to string should be www but %v", wwwString)
-	}
-
-	wwwString = wwwtld.String(false)
-	if wwwString != "www." {
-		t.Errorf("wwwString to string should be www. but %v", wwwString)
-	}
+	Equal(t, wwwtld.String(true), "www")
+	Equal(t, wwwtld.String(false), "www.")
 
 	root, _ = knetmixcase.StripRight(3)
 	NameEqToStr(t, root, ".")
@@ -134,20 +114,11 @@ func TestNameHash(t *testing.T) {
 	name1, _ := NewName("wwwnnnnnnnnnnnnn.KNET.cNNNNNNNNN", false)
 	name2, _ := NewName("wwwnnnnnnnnnnnnn.KNET.cNNNNNNNNn", false)
 	name3, _ := NewName("wwwnnnnnnnnnnnnn.KNET.cNNNNNNNNN.baidu.com.cn.net", false)
-	if name1.Hash(false) != name2.Hash(false) {
-		t.Errorf("same name with difference case should has same hash")
-	}
+	Equal(t, name1.Hash(false), name2.Hash(false))
+	Assert(t, name1.Hash(false) != name3.Hash(false), "different name should has different hash")
 
-	if name1.Hash(false) == name3.Hash(false) {
-		t.Errorf("different name should has different hash")
-	}
-
-	/*
-		//name collision
-		if NameFromStringUnsafe("2298.com").Hash(false) == NameFromStringUnsafe("23yy.com").Hash(false) {
-			t.Errorf("different name should has different hash")
-		}
-	*/
+	//name collision
+	//Assert(t, NameFromStringUnsafe("2298.com").Hash(false) != NameFromStringUnsafe("23yy.com").Hash(false), "")
 }
 
 func TestNameIsSubdomain(t *testing.T) {
@@ -157,39 +128,29 @@ func TestNameIsSubdomain(t *testing.T) {
 	cn, _ := NewName("cn", true)
 	knet, _ := NewName("kNeT", false)
 
-	if www_knet_cn.IsSubDomain(knet_cn) == false ||
-		knet_cn.IsSubDomain(cn) == false ||
-		www_knet.IsSubDomain(knet) == false ||
-		knet_cn.IsSubDomain(Root) == false ||
-		cn.IsSubDomain(Root) == false ||
-		knet.IsSubDomain(Root) == false ||
-		www_knet_cn.IsSubDomain(Root) == false ||
-		www_knet.IsSubDomain(Root) == false ||
-		Root.IsSubDomain(Root) == false {
-		t.Errorf("sub domain test fail")
-	}
+	Assert(t, www_knet_cn.IsSubDomain(knet_cn) &&
+		knet_cn.IsSubDomain(cn) &&
+		www_knet.IsSubDomain(knet) &&
+		knet_cn.IsSubDomain(Root) &&
+		cn.IsSubDomain(Root) &&
+		knet.IsSubDomain(Root) &&
+		www_knet_cn.IsSubDomain(Root) &&
+		www_knet.IsSubDomain(Root) &&
+		Root.IsSubDomain(Root), "sub domain test fail")
 
-	if knet.IsSubDomain(knet_cn) ||
-		knet.IsSubDomain(cn) ||
-		Root.IsSubDomain(cn) ||
-		www_knet.IsSubDomain(www_knet_cn) {
-		t.Errorf("kent isnot sub domain of knet.cn or cn")
-	}
+	Assert(t, knet.IsSubDomain(knet_cn) == false &&
+		knet.IsSubDomain(cn) == false &&
+		Root.IsSubDomain(cn) == false &&
+		www_knet.IsSubDomain(www_knet_cn) == false, "kent isnot sub domain of knet.cn or cn")
 }
 
 func TestNameEquals(t *testing.T) {
 	knetmixcase, _ := NewName("www.KNET.cN", false)
 	knetdowncase, _ := NewName("www.knet.cn", true)
-	if knetmixcase.Equals(knetdowncase) == false {
-		t.Errorf("www.knet.cn is same with www.KNET.cN")
-	}
+	Assert(t, knetmixcase.Equals(knetdowncase), "www.knet.cn is same with www.KNET.cN")
 
-	if knetmixcase.CaseSensitiveEquals(knetdowncase) {
-		t.Errorf("www.knet.cn isnot casesenstive same with www.KNET.cN")
-	}
+	Assert(t, knetmixcase.CaseSensitiveEquals(knetdowncase) == false, "www.knet.cn isnot casesenstive same with www.KNET.cN")
 
 	knetmixcase.Downcase()
-	if knetmixcase.CaseSensitiveEquals(knetdowncase) == false {
-		t.Errorf("www.knet.cn is casesenstive same with www.knet.cn")
-	}
+	Assert(t, knetmixcase.CaseSensitiveEquals(knetdowncase), "")
 }

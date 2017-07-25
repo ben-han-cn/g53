@@ -1,8 +1,10 @@
 package g53
 
 import (
-	"g53/util"
+	//"fmt"
 	"testing"
+
+	"g53/util"
 )
 
 func parseMatchRender(t *testing.T, rawData string) {
@@ -50,5 +52,50 @@ func TestRdataFromToWire(t *testing.T) {
 
 	for _, raw := range rawDatas {
 		parseMatchRender(t, raw)
+	}
+}
+
+func TestTxtParse(t *testing.T) {
+	txts := []string{
+		"\"good boy\" \"bad boy\"",
+		"\"good \\\"boy\" \"bad boy\"",
+		"   \"good\" \"v=1 boy\"  ",
+		"\"good",
+	}
+	type expectResult struct {
+		err  error
+		strs []string
+	}
+	expects := []expectResult{
+		expectResult{
+			err:  nil,
+			strs: []string{"good boy", "bad boy"},
+		},
+
+		expectResult{
+			err:  nil,
+			strs: []string{"good \\\"boy", "bad boy"},
+		},
+
+		expectResult{
+			err:  nil,
+			strs: []string{"good", "v=1 boy"},
+		},
+
+		expectResult{
+			err:  ErrQuoteInTxtIsNotInPair,
+			strs: nil,
+		},
+	}
+
+	for i, txt := range txts {
+		ss, err := txtStringParse(txt)
+		Assert(t, err == expects[i].err, "")
+		if expects[i].strs == nil {
+			Assert(t, ss == nil, "")
+		} else {
+			Assert(t, ss[0] == expects[i].strs[0], "")
+			Assert(t, ss[1] == expects[i].strs[1], "")
+		}
 	}
 }

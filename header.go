@@ -13,19 +13,19 @@ type FlagField uint16
 
 const (
 	FLAG_QR FlagField = 0x8000
-	FLAG_AA           = 0x0400
-	FLAG_TC           = 0x0200
-	FLAG_RD           = 0x0100
-	FLAG_RA           = 0x0080
-	FLAG_AD           = 0x0020
-	FLAG_CD           = 0x0010
+	FLAG_AA FlagField = 0x0400
+	FLAG_TC FlagField = 0x0200
+	FLAG_RD FlagField = 0x0100
+	FLAG_RA FlagField = 0x0080
+	FLAG_AD FlagField = 0x0020
+	FLAG_CD FlagField = 0x0010
 )
 
 const (
 	HEADERFLAG_MASK uint16 = 0x87b0
-	OPCODE_MASK            = 0x7800
-	OPCODE_SHIFT           = 11
-	RCODE_MASK             = 0x000f
+	OPCODE_MASK     uint16 = 0x7800
+	OPCODE_SHIFT    uint16 = 11
+	RCODE_MASK      uint16 = 0x000f
 )
 
 type Header struct {

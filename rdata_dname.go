@@ -22,7 +22,7 @@ func (c *DName) Compare(other Rdata) int {
 }
 
 func (c *DName) String() string {
-	return fieldToStr(RDF_D_NAME, c.Target)
+	return fieldToString(RDF_D_NAME, c.Target)
 }
 
 func DNameFromWire(buffer *util.InputBuffer, ll uint16) (*DName, error) {
@@ -39,7 +39,7 @@ func DNameFromWire(buffer *util.InputBuffer, ll uint16) (*DName, error) {
 }
 
 func DNameFromString(s string) (*DName, error) {
-	n, err := fieldFromStr(RDF_D_NAME, s)
+	n, err := fieldFromString(RDF_D_NAME, s)
 	if err == nil {
 		name, _ := n.(*Name)
 		return &DName{name}, nil

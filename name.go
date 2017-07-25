@@ -27,7 +27,7 @@ const (
 	COMPRESS_POINTER_MARK16 = 0xc000
 )
 
-var digitvalue = []int{
+var digitvalue = [256]int{
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 16
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 32
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 48
@@ -46,7 +46,7 @@ var digitvalue = []int{
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 256
 }
 
-var maptolower = []byte{
+var maptolower = [256]byte{
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
 	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
@@ -586,14 +586,18 @@ func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
 	}
 
 	if startLabel+labelCount == name.labelCount {
-		offsets := make([]byte, labelCount)
-		firstOffset := name.offsets[startLabel]
-		copy(offsets, name.offsets[startLabel:])
-		raw := name.raw[offsets[0]:name.length]
-		for i := uint(0); i < labelCount; i++ {
-			offsets[i] -= firstOffset
+		if startLabel == 0 {
+			return name, nil
+		} else {
+			offsets := make([]byte, labelCount)
+			firstOffset := name.offsets[startLabel]
+			copy(offsets, name.offsets[startLabel:])
+			raw := name.raw[offsets[0]:name.length]
+			for i := uint(0); i < labelCount; i++ {
+				offsets[i] -= firstOffset
+			}
+			return &Name{raw, offsets, uint(len(raw)), labelCount}, nil
 		}
-		return &Name{raw, offsets, uint(len(raw)), labelCount}, nil
 	} else {
 		offsets := make([]byte, labelCount+1)
 		firstOffset := name.offsets[startLabel]

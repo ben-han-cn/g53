@@ -22,7 +22,7 @@ func (p *PTR) Compare(other Rdata) int {
 }
 
 func (p *PTR) String() string {
-	return fieldToStr(RDF_D_NAME, p.Name)
+	return fieldToString(RDF_D_NAME, p.Name)
 }
 
 func PTRFromWire(buffer *util.InputBuffer, ll uint16) (*PTR, error) {
@@ -39,7 +39,7 @@ func PTRFromWire(buffer *util.InputBuffer, ll uint16) (*PTR, error) {
 }
 
 func PTRFromString(s string) (*PTR, error) {
-	n, err := fieldFromStr(RDF_D_NAME, s)
+	n, err := fieldFromString(RDF_D_NAME, s)
 	if err == nil {
 		name, _ := n.(*Name)
 		return &PTR{name}, nil

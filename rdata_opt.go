@@ -23,7 +23,7 @@ func (opt *OPT) Compare(other Rdata) int {
 }
 
 func (opt *OPT) String() string {
-	return fieldToStr(RDF_D_HEX, opt.Data)
+	return fieldToString(RDF_D_HEX, opt.Data)
 }
 
 func OPTFromWire(buffer *util.InputBuffer, ll uint16) (*OPT, error) {
@@ -40,7 +40,7 @@ func OPTFromWire(buffer *util.InputBuffer, ll uint16) (*OPT, error) {
 }
 
 func OPTFromString(s string) (*OPT, error) {
-	f, err := fieldFromStr(RDF_D_HEX, s)
+	f, err := fieldFromString(RDF_D_HEX, s)
 	if err == nil {
 		d, _ := f.([]uint8)
 		return &OPT{d}, nil

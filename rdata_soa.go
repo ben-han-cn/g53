@@ -2,6 +2,7 @@ package g53
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 
 	"g53/util"
@@ -43,13 +44,13 @@ func (soa *SOA) Compare(other Rdata) int {
 
 func (soa *SOA) String() string {
 	var ss []string
-	ss = append(ss, fieldToStr(RDF_D_NAME, soa.MName))
-	ss = append(ss, fieldToStr(RDF_D_NAME, soa.RName))
-	ss = append(ss, fieldToStr(RDF_D_INT, soa.Serial))
-	ss = append(ss, fieldToStr(RDF_D_INT, soa.Refresh))
-	ss = append(ss, fieldToStr(RDF_D_INT, soa.Retry))
-	ss = append(ss, fieldToStr(RDF_D_INT, soa.Expire))
-	ss = append(ss, fieldToStr(RDF_D_INT, soa.Minimum))
+	ss = append(ss, fieldToString(RDF_D_NAME, soa.MName))
+	ss = append(ss, fieldToString(RDF_D_NAME, soa.RName))
+	ss = append(ss, fieldToString(RDF_D_INT, soa.Serial))
+	ss = append(ss, fieldToString(RDF_D_INT, soa.Refresh))
+	ss = append(ss, fieldToString(RDF_D_INT, soa.Retry))
+	ss = append(ss, fieldToString(RDF_D_INT, soa.Expire))
+	ss = append(ss, fieldToString(RDF_D_INT, soa.Minimum))
 	return strings.Join(ss, " ")
 }
 
@@ -103,49 +104,52 @@ func SOAFromWire(buffer *util.InputBuffer, ll uint16) (*SOA, error) {
 	return &SOA{mname, rname, serial, refresh, retry, expire, minimum}, nil
 }
 
+var soaRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)
+
 func SOAFromString(s string) (*SOA, error) {
-	fields := strings.Split(s, " ")
-	if len(fields) != 7 {
+	fields := soaRdataTemplate.FindStringSubmatch(s)
+	if len(fields) != 8 {
 		return nil, errors.New("short of fields for soa")
 	}
 
-	name, err := fieldFromStr(RDF_D_NAME, fields[0])
+	fields = fields[1:]
+	name, err := fieldFromString(RDF_D_NAME, fields[0])
 	if err != nil {
 		return nil, err
 	}
 	mname, _ := name.(*Name)
 
-	name, err = fieldFromStr(RDF_D_NAME, fields[1])
+	name, err = fieldFromString(RDF_D_NAME, fields[1])
 	if err != nil {
 		return nil, err
 	}
 	rname, _ := name.(*Name)
 
-	i, err := fieldFromStr(RDF_D_INT, fields[2])
+	i, err := fieldFromString(RDF_D_INT, fields[2])
 	if err != nil {
 		return nil, err
 	}
 	serial, _ := i.(int)
 
-	i, err = fieldFromStr(RDF_D_INT, fields[3])
+	i, err = fieldFromString(RDF_D_INT, fields[3])
 	if err != nil {
 		return nil, err
 	}
 	refresh, _ := i.(int)
 
-	i, err = fieldFromStr(RDF_D_INT, fields[4])
+	i, err = fieldFromString(RDF_D_INT, fields[4])
 	if err != nil {
 		return nil, err
 	}
 	retry, _ := i.(int)
 
-	i, err = fieldFromStr(RDF_D_INT, fields[5])
+	i, err = fieldFromString(RDF_D_INT, fields[5])
 	if err != nil {
 		return nil, err
 	}
 	expire, _ := i.(int)
 
-	i, err = fieldFromStr(RDF_D_INT, fields[6])
+	i, err = fieldFromString(RDF_D_INT, fields[6])
 	if err != nil {
 		return nil, err
 	}

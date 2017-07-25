@@ -23,7 +23,7 @@ func (txt *Txt) Compare(other Rdata) int {
 }
 
 func (txt *Txt) String() string {
-	return fieldToStr(RDF_D_TXT, txt.Data)
+	return fieldToString(RDF_D_TXT, txt.Data)
 }
 
 func TxtFromWire(buffer *util.InputBuffer, ll uint16) (*Txt, error) {
@@ -39,7 +39,7 @@ func TxtFromWire(buffer *util.InputBuffer, ll uint16) (*Txt, error) {
 }
 
 func TxtFromString(s string) (*Txt, error) {
-	f, err := fieldFromStr(RDF_D_TXT, s)
+	f, err := fieldFromString(RDF_D_TXT, s)
 	if err != nil {
 		return nil, err
 	} else {
