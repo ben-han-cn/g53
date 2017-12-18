@@ -19,6 +19,7 @@ var (
 	ErrQuoteInTxtIsNotInPair = errors.New("quote in text record isn't in pair")
 	ErrDataIsTooShort        = errors.New("raw data isn't long enough")
 	ErrOutOfRange            = errors.New("data out of range")
+	ErrInvalidTXT            = errors.New("txt record is not valid")
 )
 
 type RDFCodingType uint8
@@ -440,6 +441,8 @@ func txtStringParse(s string) ([]string, error) {
 
 	if inQuote {
 		return nil, ErrQuoteInTxtIsNotInPair
+	} else if len(strs) == 0 {
+		return nil, ErrInvalidTXT
 	} else {
 		return strs, nil
 	}

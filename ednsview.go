@@ -10,17 +10,17 @@ const (
 )
 
 type ViewOpt struct {
-	view string
+	View string
 }
 
 func (vo *ViewOpt) Rend(render *MsgRender) {
 	render.WriteUint16(EDNS_VIEW)
-	render.WriteUint16(uint16(len(vo.view)))
-	render.WriteData([]byte(vo.view))
+	render.WriteUint16(uint16(len(vo.View)))
+	render.WriteData([]byte(vo.View))
 }
 
 func (vo *ViewOpt) String() string {
-	return fmt.Sprintf("; CLIENT-VIEW: %s\n", vo.view)
+	return fmt.Sprintf("; CLIENT-VIEW: %s\n", vo.View)
 }
 
 //read from OPTION-LENGTH
@@ -36,7 +36,7 @@ func viewOptFromWire(buffer *util.InputBuffer) (Option, error) {
 	}
 
 	return &ViewOpt{
-		view: string(view),
+		View: string(view),
 	}, nil
 }
 
@@ -62,7 +62,7 @@ func viewOptFromRdata(rdata Rdata) Option {
 
 func (e *EDNS) AddSubnetView(view string) error {
 	e.Options = append(e.Options, &ViewOpt{
-		view: view,
+		View: view,
 	})
 	return nil
 }

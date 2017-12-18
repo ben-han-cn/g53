@@ -89,9 +89,21 @@ func EdnsFromRRset(rrset *RRset) *EDNS {
 	options := []Option{}
 	if len(rrset.Rdatas) > 0 {
 		for _, rdata := range rrset.Rdatas {
-			opt := subnetOptFromRdata(rdata)
-			if opt != nil {
-				options = append(options, opt)
+			opt := rdata.(*OPT)
+			if len(opt.Data) == 0 {
+				continue
+			}
+
+			buffer := util.NewInputBuffer(opt.Data)
+			code, _ := buffer.ReadUint16()
+			if code == EDNS_SUBNET {
+				if option, err := subnetOptFromWire(buffer); err == nil {
+					options = append(options, option)
+				}
+			} else if code == EDNS_VIEW {
+				if option, err := viewOptFromWire(buffer); err == nil {
+					options = append(options, option)
+				}
 			}
 		}
 	}
@@ -158,4 +170,13 @@ func (e *EDNS) String() string {
 
 func (e *EDNS) CleanOption() {
 	e.Options = []Option{}
+}
+
+func (e *EDNS) RRCount() int {
+	optCount := len(e.Options)
+	if optCount == 0 {
+		return 1
+	} else {
+		return optCount
+	}
 }

@@ -21,13 +21,13 @@ type TSIGAlgorithm string
 
 func AlgorithmFromString(name string) (TSIGAlgorithm, error) {
 	switch strings.ToLower(name) {
-	case "hmac-md5":
+	case "hmac-md5", "hmac-md5.sig-alg.reg.int.":
 		return HmacMD5, nil
-	case "hmac-sha1":
+	case "hmac-sha1", "hmac-sha1.":
 		return HmacSHA1, nil
-	case "hmac-sha256":
+	case "hmac-sha256", "hmac-sha256.":
 		return HmacSHA256, nil
-	case "hmac-sha512":
+	case "hmac-sha512", "hmac-sha512.":
 		return HmacSHA512, nil
 	default:
 		return "", errors.New("No such algorothm")
@@ -371,6 +371,7 @@ func (tsig *TSIG) RendTsig(header Header, render *MsgRender) []byte {
 func (tsig *TSIG) VerifyTsig(msg *Message, secret string, requestMac []byte) error {
 	msg.Tsig = nil
 	render := NewMsgRender()
+	msg.RecalculateSectionRrCount()
 	msg.Rend(render)
 
 	buf := tsig.toWireFmtBuf(render.Data(), requestMac)

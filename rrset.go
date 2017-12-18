@@ -428,7 +428,7 @@ func RRsetFromString(s string) (*RRset, error) {
 }
 
 func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
-	name, err := NameFromWire(buffer, true)
+	name, err := NameFromWire(buffer, false)
 	if err != nil {
 		return nil, err
 	}

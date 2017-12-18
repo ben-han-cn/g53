@@ -47,6 +47,8 @@ func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
 	h.SetFlag(FLAG_RD, true)
 	h.Opcode = OP_QUERY
 	h.Id = util.GenMessageId()
+	h.QDCount = 1
+	h.ARCount = 1
 
 	q := &Question{
 		Name:  name,
@@ -89,8 +91,10 @@ func (m *Message) FromWire(buffer *util.InputBuffer) error {
 			return err
 		}
 		m.Question = q
-	} else if h.Opcode == OP_QUERY && h.Rcode != R_FORMERR {
-		return ErrQueryQuestionIsNotValid
+		// for axfr, if more than one package is returued, the second and
+		// following pkg will has no question
+		//} else if h.Opcode == OP_QUERY && h.Rcode != R_FORMERR {
+		// 	return ErrQueryQuestionIsNotValid
 	} else {
 		m.Question = nil
 	}
@@ -131,13 +135,7 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 		if lastRrset.IsSameRrset(rrset) {
 			lastRrset.Rdatas = append(lastRrset.Rdatas, rrset.Rdatas[0])
 		} else {
-			if st == AdditionalSection && lastRrset.Type == RR_OPT {
-				m.Edns = EdnsFromRRset(lastRrset)
-			} else if st == AdditionalSection && lastRrset.Type == RR_TSIG {
-				m.Tsig = TSIGFromRRset(lastRrset)
-			} else {
-				s = append(s, lastRrset)
-			}
+			s = append(s, lastRrset)
 			lastRrset = rrset
 		}
 	}
@@ -157,7 +155,6 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 }
 
 func (m *Message) Rend(r *MsgRender) {
-	m.RecalculateSectionRrCount()
 	(&m.Header).Rend(r)
 
 	if m.Question != nil {
@@ -189,7 +186,7 @@ func (m *Message) RecalculateSectionRrCount() {
 	m.Header.ARCount = uint16(m.Sections[AdditionalSection].rrCount())
 
 	if m.Edns != nil {
-		m.Header.ARCount += 1
+		m.Header.ARCount += uint16(m.Edns.RRCount())
 	}
 }
 
@@ -319,7 +316,7 @@ func (m *Message) HasRRsetWithNameType(st SectionType, n *Name, t RRType) bool {
 func (m *Message) MakeResponse() *Message {
 	h := Header{
 		Id:      m.Header.Id,
-		Opcode:  OP_QUERY,
+		Opcode:  m.Header.Opcode,
 		QDCount: m.Header.QDCount,
 	}
 
