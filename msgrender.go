@@ -1,9 +1,6 @@
 package g53
 
 import (
-	"log"
-	"os"
-
 	"g53/util"
 )
 
@@ -20,47 +17,48 @@ type nameComparator struct {
 	caseSensitive bool
 }
 
-var logger *log.Logger = log.New(os.Stdout, "[debug]", 0)
-
 func (c *nameComparator) compare(item *offsetItem) bool {
 	if item.hash != c.hash || item.l != uint16(c.nameBuf.Len()) {
 		return false
 	}
 
 	itemPos := item.pos
-	var itemLabelLen uint16 = 0
-	for i := uint16(0); i < item.l; i++ {
-		itemLabelLen, itemPos = nextPos(c.buffer, itemPos, itemLabelLen)
-		ch1, _ := c.buffer.At(uint(itemPos))
-		ch2, _ := c.nameBuf.ReadUint8()
-		if c.caseSensitive {
-			if ch1 != ch2 {
-				return false
-			}
-		} else {
-			if maptolower[int(ch1)] != maptolower[int(ch2)] {
-				return false
-			}
+	itemLabelLen := uint8(0)
+	for {
+		itemLabelLen, itemPos = nextPos(c.buffer, itemPos)
+		nameLabelLen, _ := c.nameBuf.ReadUint8()
+		if itemLabelLen != nameLabelLen {
+			return false
+		} else if nameLabelLen == 0 {
+			return true
 		}
-		itemPos++
-	}
 
-	return true
+		for nameLabelLen > 0 {
+			ch1, _ := c.buffer.At(uint(itemPos))
+			ch2, _ := c.nameBuf.ReadUint8()
+			if c.caseSensitive {
+				if ch1 != ch2 {
+					return false
+				}
+			} else {
+				if maptolower[int(ch1)] != maptolower[int(ch2)] {
+					return false
+				}
+			}
+			itemPos++
+			nameLabelLen -= 1
+		}
+	}
 }
 
-func nextPos(buffer *util.OutputBuffer, pos uint16, llen uint16) (uint16, uint16) {
-	if llen == 0 {
-		i := 0
-		b, _ := buffer.At(uint(pos))
-		for ; b&COMPRESS_POINTER_MARK8 == COMPRESS_POINTER_MARK8; i += 2 {
-			nb, _ := buffer.At(uint(pos + 1))
-			pos = uint16((b & ^uint8(COMPRESS_POINTER_MARK8)))*256 + uint16(nb)
-			b, _ = buffer.At(uint(pos))
-		}
-		return uint16(b), pos
-	} else {
-		return llen - 1, pos
+func nextPos(buffer *util.OutputBuffer, pos uint16) (uint8, uint16) {
+	b, _ := buffer.At(uint(pos))
+	for b&COMPRESS_POINTER_MARK8 == COMPRESS_POINTER_MARK8 {
+		nb, _ := buffer.At(uint(pos + 1))
+		pos = uint16((b & ^uint8(COMPRESS_POINTER_MARK8)))*256 + uint16(nb)
+		b, _ = buffer.At(uint(pos))
 	}
+	return b, pos + 1
 }
 
 const (
