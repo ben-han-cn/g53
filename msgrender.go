@@ -97,9 +97,9 @@ func (r *MsgRender) SetTrancated() {
 	r.truncated = true
 }
 
-func (r *MsgRender) findOffset(buffer *util.OutputBuffer, nameBuf *util.InputBuffer, hash uint32, caseSensitive bool) uint16 {
+func (r *MsgRender) findOffset(buffer *util.OutputBuffer, nameBuf *util.InputBuffer, hash uint32) uint16 {
 	bucketId := hash % uint32(BUCKETS)
-	comparator := nameComparator{buffer, nameBuf, hash, caseSensitive}
+	comparator := nameComparator{buffer, nameBuf, hash, r.caseSensitive}
 	found := false
 
 	items := r.table[bucketId]
@@ -154,7 +154,7 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 		r.seqHashs[nlabelsUncomp] = parent.Hash(r.caseSensitive)
 		if compress {
 			parentBuf.SetData(parent.raw)
-			ptrOffset = r.findOffset(r.buffer, &parentBuf, r.seqHashs[nlabelsUncomp], r.caseSensitive)
+			ptrOffset = r.findOffset(r.buffer, &parentBuf, r.seqHashs[nlabelsUncomp])
 			if ptrOffset != NO_OFFSET {
 				break
 			}

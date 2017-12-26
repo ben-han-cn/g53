@@ -117,6 +117,10 @@ func TestNameHash(t *testing.T) {
 	Equal(t, name1.Hash(false), name2.Hash(false))
 	Assert(t, name1.Hash(false) != name3.Hash(false), "different name should has different hash")
 
+	name1, _ = NewName("a.example.com", false)
+	name2, _ = NewName("b.example.com", false)
+	Assert(t, name1.Hash(true) != name2.Hash(true), "different name should has different hash")
+
 	//name collision
 	//Assert(t, NameFromStringUnsafe("2298.com").Hash(false) != NameFromStringUnsafe("23yy.com").Hash(false), "")
 }

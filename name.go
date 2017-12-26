@@ -287,8 +287,9 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 	n := uint(0)
 	nused := uint(0)
 	done := false
-	offsets := make([]byte, 0, MAX_LABELS)
-	raw := make([]byte, 0, buffer.Len())
+	//5, 15 is the experienced value for label and name len
+	offsets := make([]byte, 0, 5)
+	raw := make([]byte, 0, 15)
 	seenPointer := false
 	state := fwStart
 	cused := uint(0)
