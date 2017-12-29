@@ -27,17 +27,5 @@ func (r *NameRef) IsRoot() bool {
 }
 
 func (r *NameRef) Hash(caseSensitive bool) uint32 {
-	raw := r.Raw()
-	hashLen := len(raw)
-	hash := uint32(0)
-	if caseSensitive {
-		for i := 0; i < hashLen; i++ {
-			hash ^= uint32(raw[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2)
-		}
-	} else {
-		for i := 0; i < hashLen; i++ {
-			hash ^= uint32(maptolower[raw[i]]) + 0x9e3779b9 + (hash << 6) + (hash >> 2)
-		}
-	}
-	return hash
+	return hashRaw(r.Raw(), caseSensitive)
 }

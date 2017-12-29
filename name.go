@@ -676,15 +676,19 @@ func (name *Name) StripRight(c uint) (*Name, error) {
 }
 
 func (name *Name) Hash(caseSensitive bool) uint32 {
-	hashLen := name.length
+	return hashRaw(name.raw, caseSensitive)
+}
+
+func hashRaw(raw []byte, caseSensitive bool) uint32 {
+	hashLen := len(raw)
 	hash := uint32(0)
 	if caseSensitive {
-		for i := uint(0); i < hashLen; i++ {
-			hash ^= uint32(name.raw[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2)
+		for i := 0; i < hashLen; i++ {
+			hash ^= uint32(raw[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2)
 		}
 	} else {
-		for i := uint(0); i < hashLen; i++ {
-			hash ^= uint32(maptolower[name.raw[i]]) + 0x9e3779b9 + (hash << 6) + (hash >> 2)
+		for i := 0; i < hashLen; i++ {
+			hash ^= uint32(maptolower[raw[i]]) + 0x9e3779b9 + (hash << 6) + (hash >> 2)
 		}
 	}
 	return hash
