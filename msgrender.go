@@ -139,21 +139,21 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 	var nlabelsUncomp uint
 	ptrOffset := NO_OFFSET
 
-	parent := name
+	ref := fromName(name)
 	var parentBuf util.InputBuffer
 	for nlabelsUncomp = 0; nlabelsUncomp < nlables; nlabelsUncomp++ {
 		if nlabelsUncomp > 0 {
-			parent, _ = parent.StripLeft(1)
+			ref.Parent()
 		}
 
-		if parent.Length() == 1 {
+		if ref.IsRoot() {
 			nlabelsUncomp += 1
 			break
 		}
 
-		r.seqHashs[nlabelsUncomp] = parent.Hash(r.caseSensitive)
+		r.seqHashs[nlabelsUncomp] = ref.Hash(r.caseSensitive)
 		if compress {
-			parentBuf.SetData(parent.raw)
+			parentBuf.SetData(ref.Raw())
 			ptrOffset = r.findOffset(r.buffer, &parentBuf, r.seqHashs[nlabelsUncomp])
 			if ptrOffset != NO_OFFSET {
 				break
