@@ -12,18 +12,18 @@ type Question struct {
 	Class RRClass
 }
 
-func QuestionFromWire(buffer *util.InputBuffer) (*Question, error) {
-	n, err := NameFromWire(buffer, false)
+func QuestionFromWire(buf *util.InputBuffer) (*Question, error) {
+	n, err := NameFromWire(buf, false)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := TypeFromWire(buffer)
+	t, err := TypeFromWire(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	cls, err := ClassFromWire(buffer)
+	cls, err := ClassFromWire(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -41,10 +41,10 @@ func (q *Question) Rend(r *MsgRender) {
 	q.Class.Rend(r)
 }
 
-func (q *Question) ToWire(buffer *util.OutputBuffer) {
-	q.Name.ToWire(buffer)
-	q.Type.ToWire(buffer)
-	q.Class.ToWire(buffer)
+func (q *Question) ToWire(buf *util.OutputBuffer) {
+	q.Name.ToWire(buf)
+	q.Type.ToWire(buf)
+	q.Class.ToWire(buf)
 }
 
 func (q *Question) String() string {

@@ -9,8 +9,8 @@ import (
 
 func parseMatchRender(t *testing.T, rawData string) {
 	wire, _ := util.HexStrToBytes(rawData)
-	buffer := util.NewInputBuffer(wire)
-	nm, err := MessageFromWire(buffer)
+	buf := util.NewInputBuffer(wire)
+	nm, err := MessageFromWire(buf)
 	Assert(t, err == nil, "err should be nil")
 
 	render := NewMsgRender()

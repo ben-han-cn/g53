@@ -257,8 +257,8 @@ var typeNameMap = map[RRType]string{
 	RR_DLV:   "dlv",
 }
 
-func TTLFromWire(buffer *util.InputBuffer) (RRTTL, error) {
-	ttl, err := buffer.ReadUint32()
+func TTLFromWire(buf *util.InputBuffer) (RRTTL, error) {
+	ttl, err := buf.ReadUint32()
 	if err != nil {
 		return RRTTL(0), err
 	}
@@ -279,16 +279,16 @@ func (ttl RRTTL) Rend(render *MsgRender) {
 	render.WriteUint32(uint32(ttl))
 }
 
-func (ttl RRTTL) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteUint32(uint32(ttl))
+func (ttl RRTTL) ToWire(buf *util.OutputBuffer) {
+	buf.WriteUint32(uint32(ttl))
 }
 
 func (ttl RRTTL) String() string {
 	return strconv.Itoa(int(ttl))
 }
 
-func ClassFromWire(buffer *util.InputBuffer) (RRClass, error) {
-	cls, err := buffer.ReadUint16()
+func ClassFromWire(buf *util.InputBuffer) (RRClass, error) {
+	cls, err := buf.ReadUint16()
 	if err != nil {
 		return RRClass(0), err
 	}
@@ -318,8 +318,8 @@ func (cls RRClass) Rend(render *MsgRender) {
 	render.WriteUint16(uint16(cls))
 }
 
-func (cls RRClass) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteUint16(uint16(cls))
+func (cls RRClass) ToWire(buf *util.OutputBuffer) {
+	buf.WriteUint16(uint16(cls))
 }
 
 func (cls RRClass) String() string {
@@ -339,8 +339,8 @@ func (cls RRClass) String() string {
 	}
 }
 
-func TypeFromWire(buffer *util.InputBuffer) (RRType, error) {
-	t, err := buffer.ReadUint16()
+func TypeFromWire(buf *util.InputBuffer) (RRType, error) {
+	t, err := buf.ReadUint16()
 	if err != nil {
 		return RRType(0), err
 	}
@@ -362,8 +362,8 @@ func (t RRType) Rend(render *MsgRender) {
 	render.WriteUint16(uint16(t))
 }
 
-func (t RRType) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteUint16(uint16(t))
+func (t RRType) ToWire(buf *util.OutputBuffer) {
+	buf.WriteUint16(uint16(t))
 }
 
 func (t RRType) String() string {
@@ -427,28 +427,28 @@ func RRsetFromString(s string) (*RRset, error) {
 	}, nil
 }
 
-func RRsetFromWire(buffer *util.InputBuffer) (*RRset, error) {
-	name, err := NameFromWire(buffer, false)
+func RRsetFromWire(buf *util.InputBuffer) (*RRset, error) {
+	name, err := NameFromWire(buf, false)
 	if err != nil {
 		return nil, err
 	}
 
-	typ, err := TypeFromWire(buffer)
+	typ, err := TypeFromWire(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	cls, err := ClassFromWire(buffer)
+	cls, err := ClassFromWire(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	ttl, err := TTLFromWire(buffer)
+	ttl, err := TTLFromWire(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	rdata, err := RdataFromWire(typ, buffer)
+	rdata, err := RdataFromWire(typ, buf)
 	if err != nil {
 		return nil, err
 	}
@@ -488,24 +488,24 @@ func (rrset *RRset) Rend(r *MsgRender) {
 	}
 }
 
-func (rrset *RRset) ToWire(buffer *util.OutputBuffer) {
+func (rrset *RRset) ToWire(buf *util.OutputBuffer) {
 	if len(rrset.Rdatas) == 0 {
-		rrset.Name.ToWire(buffer)
-		rrset.Type.ToWire(buffer)
-		rrset.Class.ToWire(buffer)
-		rrset.Ttl.ToWire(buffer)
-		buffer.WriteUint16(0)
+		rrset.Name.ToWire(buf)
+		rrset.Type.ToWire(buf)
+		rrset.Class.ToWire(buf)
+		rrset.Ttl.ToWire(buf)
+		buf.WriteUint16(0)
 	} else {
 		for _, rdata := range rrset.Rdatas {
-			rrset.Name.ToWire(buffer)
-			rrset.Type.ToWire(buffer)
-			rrset.Class.ToWire(buffer)
-			rrset.Ttl.ToWire(buffer)
+			rrset.Name.ToWire(buf)
+			rrset.Type.ToWire(buf)
+			rrset.Class.ToWire(buf)
+			rrset.Ttl.ToWire(buf)
 
-			pos := buffer.Len()
-			buffer.Skip(2)
-			rdata.ToWire(buffer)
-			buffer.WriteUint16At(uint16(buffer.Len()-pos-2), pos)
+			pos := buf.Len()
+			buf.Skip(2)
+			rdata.ToWire(buf)
+			buf.WriteUint16At(uint16(buf.Len()-pos-2), pos)
 		}
 	}
 }
@@ -526,16 +526,16 @@ func (rrset *RRset) String() string {
 	}
 }
 
-func (rrset *RRset) RrCount() int {
+func (rrset *RRset) RRCount() int {
 	return len(rrset.Rdatas)
 }
 
-func (rrset *RRset) IsSameRrset(other *RRset) bool {
+func (rrset *RRset) IsSameRRset(other *RRset) bool {
 	return (rrset.Type == other.Type) && rrset.Name.Equals(other.Name)
 }
 
 func (rrset *RRset) Equals(other *RRset) bool {
-	if rrset.IsSameRrset(other) == false {
+	if rrset.IsSameRRset(other) == false {
 		return false
 	}
 
@@ -572,7 +572,7 @@ func (rrset *RRset) AddRdata(rdata Rdata) error {
 }
 
 func (rrset *RRset) RotateRdata() {
-	rrCount := rrset.RrCount()
+	rrCount := rrset.RRCount()
 	if rrCount < 2 {
 		return
 	}

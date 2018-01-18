@@ -14,8 +14,8 @@ func (ns *NS) Rend(r *MsgRender) {
 	rendField(RDF_C_NAME, ns.Name, r)
 }
 
-func (ns *NS) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_NAME, ns.Name, buffer)
+func (ns *NS) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_NAME, ns.Name, buf)
 }
 
 func (ns *NS) Compare(other Rdata) int {
@@ -26,8 +26,8 @@ func (ns *NS) String() string {
 	return fieldToString(RDF_D_NAME, ns.Name)
 }
 
-func NSFromWire(buffer *util.InputBuffer, ll uint16) (*NS, error) {
-	n, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+func NSFromWire(buf *util.InputBuffer, ll uint16) (*NS, error) {
+	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {

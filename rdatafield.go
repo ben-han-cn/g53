@@ -49,15 +49,15 @@ const (
 	RDF_D_STR
 )
 
-func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (interface{}, uint16, error) {
+func fieldFromWire(ct RDFCodingType, buf *util.InputBuffer, ll uint16) (interface{}, uint16, error) {
 	switch ct {
 	case RDF_C_NAME, RDF_C_NAME_UNCOMPRESS:
-		pos := buffer.Position()
-		n, err := NameFromWire(buffer, true)
+		pos := buf.Position()
+		n, err := NameFromWire(buf, true)
 		if err != nil {
 			return nil, ll, err
 		} else {
-			namelen := uint16(buffer.Position() - pos)
+			namelen := uint16(buf.Position() - pos)
 			if ll < namelen {
 				return nil, ll, ErrDataIsTooShort
 			} else {
@@ -66,7 +66,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		}
 
 	case RDF_C_UINT8:
-		d, err := buffer.ReadUint8()
+		d, err := buf.ReadUint8()
 		if err != nil {
 			return nil, ll, err
 		} else if ll < 1 {
@@ -76,7 +76,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		}
 
 	case RDF_C_UINT16:
-		d, err := buffer.ReadUint16()
+		d, err := buf.ReadUint16()
 		if err != nil {
 			return nil, ll, err
 		} else if ll < 2 {
@@ -86,7 +86,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		}
 
 	case RDF_C_UINT32:
-		d, err := buffer.ReadUint32()
+		d, err := buf.ReadUint32()
 		if err != nil {
 			return nil, ll, err
 		} else if ll < 4 {
@@ -96,7 +96,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		}
 
 	case RDF_C_IPV4:
-		d, err := buffer.ReadBytes(4)
+		d, err := buf.ReadBytes(4)
 		if err != nil {
 			return nil, ll, err
 		} else if ll < 4 {
@@ -108,7 +108,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		}
 
 	case RDF_C_IPV6:
-		d, err := buffer.ReadBytes(16)
+		d, err := buf.ReadBytes(16)
 		if err != nil {
 			return nil, ll, err
 		} else if ll < 16 {
@@ -124,7 +124,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		var d interface{}
 		var err error
 		for ll > 0 {
-			d, ll, err = fieldFromWire(RDF_C_BYTE_BINARY, buffer, ll)
+			d, ll, err = fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 			if err != nil {
 				return nil, ll, err
 			}
@@ -134,7 +134,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		return ss, 0, nil
 
 	case RDF_C_BINARY:
-		d, err := buffer.ReadBytes(uint(ll))
+		d, err := buf.ReadBytes(uint(ll))
 		if err != nil {
 			return nil, ll, err
 		}
@@ -144,7 +144,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		return clone, 0, nil
 
 	case RDF_C_BYTE_BINARY:
-		l, err := buffer.ReadUint8()
+		l, err := buf.ReadUint8()
 		if err != nil {
 			return nil, ll, err
 		}
@@ -155,7 +155,7 @@ func fieldFromWire(ct RDFCodingType, buffer *util.InputBuffer, ll uint16) (inter
 		if uint16(l) > ll {
 			return nil, ll, ErrStringIsTooLong
 		}
-		d, err := buffer.ReadBytes(uint(l))
+		d, err := buf.ReadBytes(uint(l))
 		if err != nil {
 			return nil, ll, err
 		}
@@ -215,42 +215,42 @@ func rendField(ct RDFCodingType, data interface{}, render *MsgRender) {
 	}
 }
 
-func fieldToWire(ct RDFCodingType, data interface{}, buffer *util.OutputBuffer) {
+func fieldToWire(ct RDFCodingType, data interface{}, buf *util.OutputBuffer) {
 	switch ct {
 	case RDF_C_NAME, RDF_C_NAME_UNCOMPRESS:
 		n, _ := data.(*Name)
-		n.ToWire(buffer)
+		n.ToWire(buf)
 
 	case RDF_C_UINT8:
 		d, _ := data.(uint8)
-		buffer.WriteUint8(d)
+		buf.WriteUint8(d)
 
 	case RDF_C_UINT16:
 		d, _ := data.(uint16)
-		buffer.WriteUint16(d)
+		buf.WriteUint16(d)
 
 	case RDF_C_UINT32:
 		d, _ := data.(uint32)
-		buffer.WriteUint32(d)
+		buf.WriteUint32(d)
 
 	case RDF_C_IPV4, RDF_C_IPV6:
 		ip, _ := data.(net.IP)
-		buffer.WriteData([]uint8(ip))
+		buf.WriteData([]uint8(ip))
 
 	case RDF_C_BINARY:
 		d, _ := data.([]uint8)
-		buffer.WriteData(d)
+		buf.WriteData(d)
 
 	case RDF_C_TXT:
 		ds, _ := data.([]string)
 		for _, d := range ds {
-			fieldToWire(RDF_C_BYTE_BINARY, d, buffer)
+			fieldToWire(RDF_C_BYTE_BINARY, d, buf)
 		}
 
 	case RDF_C_BYTE_BINARY:
 		d, _ := data.([]uint8)
-		buffer.WriteUint8(uint8(len(d)))
-		buffer.WriteData(d)
+		buf.WriteUint8(uint8(len(d)))
+		buf.WriteData(d)
 	}
 }
 

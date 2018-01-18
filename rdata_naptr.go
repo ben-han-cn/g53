@@ -28,13 +28,13 @@ func (naptr *NAPTR) Rend(r *MsgRender) {
 	rendField(RDF_C_NAME, naptr.Replacement, r)
 }
 
-func (naptr *NAPTR) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_UINT16, naptr.Order, buffer)
-	fieldToWire(RDF_C_UINT16, naptr.Preference, buffer)
-	fieldToWire(RDF_C_BYTE_BINARY, []byte(naptr.Flags), buffer)
-	fieldToWire(RDF_C_BYTE_BINARY, []byte(naptr.Services), buffer)
-	fieldToWire(RDF_C_BYTE_BINARY, []byte(naptr.Regexp), buffer)
-	fieldToWire(RDF_C_NAME, naptr.Replacement, buffer)
+func (naptr *NAPTR) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_UINT16, naptr.Order, buf)
+	fieldToWire(RDF_C_UINT16, naptr.Preference, buf)
+	fieldToWire(RDF_C_BYTE_BINARY, []byte(naptr.Flags), buf)
+	fieldToWire(RDF_C_BYTE_BINARY, []byte(naptr.Services), buf)
+	fieldToWire(RDF_C_BYTE_BINARY, []byte(naptr.Regexp), buf)
+	fieldToWire(RDF_C_NAME, naptr.Replacement, buf)
 }
 
 func (naptr *NAPTR) Compare(other Rdata) int {
@@ -83,41 +83,41 @@ func (naptr *NAPTR) String() string {
 	return buf.String()
 }
 
-func NAPTRFromWire(buffer *util.InputBuffer, ll uint16) (*NAPTR, error) {
-	o, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+func NAPTRFromWire(buf *util.InputBuffer, ll uint16) (*NAPTR, error) {
+	o, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	order, _ := o.(uint16)
 
-	p, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+	p, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	preference, _ := p.(uint16)
 
-	f, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buffer, ll)
+	f, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	f_, _ := f.([]uint8)
 	flags := string(f_)
 
-	s, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buffer, ll)
+	s, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	s_, _ := s.([]uint8)
 	service := string(s_)
 
-	r, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buffer, ll)
+	r, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	r_, _ := r.([]uint8)
 	regex := string(r_)
 
-	n, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}

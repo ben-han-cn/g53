@@ -43,21 +43,21 @@ func (subnet *SubnetOpt) String() string {
 }
 
 //read from OPTION-LENGTH
-func subnetOptFromWire(buffer *util.InputBuffer) (Option, error) {
-	l, _ := buffer.ReadUint16()
-	family, _ := buffer.ReadUint16()
-	mask, _ := buffer.ReadUint8()
-	scope, _ := buffer.ReadUint8()
+func subnetOptFromWire(buf *util.InputBuffer) (Option, error) {
+	l, _ := buf.ReadUint16()
+	family, _ := buf.ReadUint16()
+	mask, _ := buf.ReadUint8()
+	scope, _ := buf.ReadUint8()
 	var ip net.IP
 	switch family {
 	case 1:
 		addr := make([]byte, 4)
-		addr_data, _ := buffer.ReadBytes(uint(l - 4))
+		addr_data, _ := buf.ReadBytes(uint(l - 4))
 		copy(addr, addr_data)
 		ip = net.IPv4(addr[0], addr[1], addr[2], addr[3])
 	case 2:
 		addr := make([]byte, 16)
-		addr_data, _ := buffer.ReadBytes(uint(l - 4))
+		addr_data, _ := buf.ReadBytes(uint(l - 4))
 		copy(addr, addr_data)
 		ip = net.IP{addr[0], addr[1], addr[2], addr[3], addr[4],
 			addr[5], addr[6], addr[7], addr[8], addr[9], addr[10],
@@ -75,23 +75,19 @@ func subnetOptFromWire(buffer *util.InputBuffer) (Option, error) {
 }
 
 func subnetOptFromRdata(rdata Rdata) Option {
-	opt := rdata.(*OPT)
-	if len(opt.Data) == 0 {
+	data := rdata.(*OPT).Data
+	if len(data) == 0 {
 		return nil
 	}
 
-	buffer := util.NewInputBuffer(opt.Data)
-	code, _ := buffer.ReadUint16()
+	buf := util.NewInputBuffer(data)
+	code, _ := buf.ReadUint16()
 	if code != EDNS_SUBNET {
 		return nil
 	}
 
-	option, err := subnetOptFromWire(buffer)
-	if err == nil {
-		return option
-	} else {
-		return nil
-	}
+	opt, _ := subnetOptFromWire(buf)
+	return opt
 }
 
 func (e *EDNS) AddSubnetV4(ip_ string) error {

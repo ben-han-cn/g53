@@ -25,8 +25,8 @@ func buildHeader(id uint16, setFlag []FlagField, counts []uint16, opcode Opcode,
 
 func matchMessageRaw(t *testing.T, rawData string, m *Message) {
 	wire, _ := util.HexStrToBytes(rawData)
-	buffer := util.NewInputBuffer(wire)
-	nm, err := MessageFromWire(buffer)
+	buf := util.NewInputBuffer(wire)
+	nm, err := MessageFromWire(buf)
 	Assert(t, err == nil, "err should be nil")
 
 	Equal(t, nm.Header, m.Header)
@@ -239,11 +239,11 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 
 func benchmarkParseMessage(b *testing.B, raw string) {
 	wire, _ := util.HexStrToBytes(raw)
-	buffer := util.NewInputBuffer(wire)
+	buf := util.NewInputBuffer(wire)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		MessageFromWire(buffer)
-		buffer.SetPosition(0)
+		MessageFromWire(buf)
+		buf.SetPosition(0)
 	}
 }
 

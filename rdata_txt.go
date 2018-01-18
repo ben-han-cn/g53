@@ -14,8 +14,8 @@ func (txt *Txt) Rend(r *MsgRender) {
 	rendField(RDF_C_TXT, txt.Data, r)
 }
 
-func (txt *Txt) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_TXT, txt.Data, buffer)
+func (txt *Txt) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_TXT, txt.Data, buf)
 }
 
 func (txt *Txt) Compare(other Rdata) int {
@@ -26,8 +26,8 @@ func (txt *Txt) String() string {
 	return fieldToString(RDF_D_TXT, txt.Data)
 }
 
-func TxtFromWire(buffer *util.InputBuffer, ll uint16) (*Txt, error) {
-	f, ll, err := fieldFromWire(RDF_C_TXT, buffer, ll)
+func TxtFromWire(buf *util.InputBuffer, ll uint16) (*Txt, error) {
+	f, ll, err := fieldFromWire(RDF_C_TXT, buf, ll)
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {

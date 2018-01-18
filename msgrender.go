@@ -11,7 +11,7 @@ type offsetItem struct {
 }
 
 type nameComparator struct {
-	buffer        *util.OutputBuffer
+	buf           *util.OutputBuffer
 	nameBuf       *util.InputBuffer
 	hash          uint32
 	caseSensitive bool
@@ -25,7 +25,7 @@ func (c *nameComparator) compare(item *offsetItem) bool {
 	itemPos := item.pos
 	itemLabelLen := uint8(0)
 	for {
-		itemLabelLen, itemPos = nextPos(c.buffer, itemPos)
+		itemLabelLen, itemPos = nextPos(c.buf, itemPos)
 		nameLabelLen, _ := c.nameBuf.ReadUint8()
 		if itemLabelLen != nameLabelLen {
 			return false
@@ -34,7 +34,7 @@ func (c *nameComparator) compare(item *offsetItem) bool {
 		}
 
 		for nameLabelLen > 0 {
-			ch1, _ := c.buffer.At(uint(itemPos))
+			ch1, _ := c.buf.At(uint(itemPos))
 			ch2, _ := c.nameBuf.ReadUint8()
 			if c.caseSensitive {
 				if ch1 != ch2 {
@@ -51,12 +51,12 @@ func (c *nameComparator) compare(item *offsetItem) bool {
 	}
 }
 
-func nextPos(buffer *util.OutputBuffer, pos uint16) (uint8, uint16) {
-	b, _ := buffer.At(uint(pos))
+func nextPos(buf *util.OutputBuffer, pos uint16) (uint8, uint16) {
+	b, _ := buf.At(uint(pos))
 	for b&COMPRESS_POINTER_MARK8 == COMPRESS_POINTER_MARK8 {
-		nb, _ := buffer.At(uint(pos + 1))
+		nb, _ := buf.At(uint(pos + 1))
 		pos = uint16((b & ^uint8(COMPRESS_POINTER_MARK8)))*256 + uint16(nb)
-		b, _ = buffer.At(uint(pos))
+		b, _ = buf.At(uint(pos))
 	}
 	return b, pos + 1
 }
@@ -68,7 +68,7 @@ const (
 )
 
 type MsgRender struct {
-	buffer        *util.OutputBuffer
+	buf           *util.OutputBuffer
 	truncated     bool
 	LenLimit      uint32
 	caseSensitive bool
@@ -78,7 +78,7 @@ type MsgRender struct {
 
 func NewMsgRender() *MsgRender {
 	render := MsgRender{
-		buffer:        util.NewOutputBuffer(512),
+		buf:           util.NewOutputBuffer(512),
 		truncated:     false,
 		LenLimit:      512,
 		caseSensitive: false,
@@ -97,9 +97,9 @@ func (r *MsgRender) SetTrancated() {
 	r.truncated = true
 }
 
-func (r *MsgRender) findOffset(buffer *util.OutputBuffer, nameBuf *util.InputBuffer, hash uint32) uint16 {
+func (r *MsgRender) findOffset(buf *util.OutputBuffer, nameBuf *util.InputBuffer, hash uint32) uint16 {
 	bucketId := hash % uint32(BUCKETS)
-	comparator := nameComparator{buffer, nameBuf, hash, r.caseSensitive}
+	comparator := nameComparator{buf, nameBuf, hash, r.caseSensitive}
 	found := false
 
 	items := r.table[bucketId]
@@ -125,7 +125,7 @@ func (r *MsgRender) addOffset(hash, offset, length uint32) {
 }
 
 func (r *MsgRender) Clear() {
-	r.buffer.Clear()
+	r.buf.Clear()
 	r.LenLimit = 512
 	r.truncated = false
 	r.caseSensitive = false
@@ -154,29 +154,29 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 		r.seqHashs[nlabelsUncomp] = ref.Hash(r.caseSensitive)
 		if compress {
 			parentBuf.SetData(ref.Raw())
-			ptrOffset = r.findOffset(r.buffer, &parentBuf, r.seqHashs[nlabelsUncomp])
+			ptrOffset = r.findOffset(r.buf, &parentBuf, r.seqHashs[nlabelsUncomp])
 			if ptrOffset != NO_OFFSET {
 				break
 			}
 		}
 	}
 
-	offset := r.buffer.Len()
+	offset := r.buf.Len()
 	if compress == false || nlabelsUncomp == nlables {
-		r.buffer.WriteData(name.raw)
+		r.buf.WriteData(name.raw)
 	} else if nlabelsUncomp > 0 {
 		compLabelOffset := name.offsets[nlabelsUncomp]
-		r.buffer.WriteData(name.raw[0:compLabelOffset])
+		r.buf.WriteData(name.raw[0:compLabelOffset])
 	}
 
 	if compress && (ptrOffset != NO_OFFSET) {
 		ptrOffset |= COMPRESS_POINTER_MARK16
-		r.buffer.WriteUint16(ptrOffset)
+		r.buf.WriteUint16(ptrOffset)
 	}
 
 	nameLen := name.length
 	for i := uint(0); i < nlabelsUncomp; i++ {
-		labelLen, _ := r.buffer.At(offset)
+		labelLen, _ := r.buf.At(offset)
 		if labelLen == 0 {
 			break
 		}
@@ -192,37 +192,37 @@ func (r *MsgRender) WriteName(name *Name, compress bool) {
 }
 
 func (r *MsgRender) Data() []uint8 {
-	return r.buffer.Data()
+	return r.buf.Data()
 }
 
 func (r *MsgRender) Len() uint {
-	return r.buffer.Len()
+	return r.buf.Len()
 }
 
 func (r *MsgRender) Skip(length uint) {
-	r.buffer.Skip(length)
+	r.buf.Skip(length)
 }
 
 func (r *MsgRender) Trim(length uint) error {
-	return r.buffer.Trim(length)
+	return r.buf.Trim(length)
 }
 
 func (r *MsgRender) WriteUint8(data uint8) {
-	r.buffer.WriteUint8(data)
+	r.buf.WriteUint8(data)
 }
 
 func (r *MsgRender) WriteUint16(data uint16) {
-	r.buffer.WriteUint16(data)
+	r.buf.WriteUint16(data)
 }
 
 func (r *MsgRender) WriteUint16At(data uint16, pos uint) error {
-	return r.buffer.WriteUint16At(data, pos)
+	return r.buf.WriteUint16At(data, pos)
 }
 
 func (r *MsgRender) WriteUint32(data uint32) {
-	r.buffer.WriteUint32(data)
+	r.buf.WriteUint32(data)
 }
 
 func (r *MsgRender) WriteData(data []uint8) {
-	r.buffer.WriteData(data)
+	r.buf.WriteData(data)
 }

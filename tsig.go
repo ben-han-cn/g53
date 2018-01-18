@@ -60,12 +60,12 @@ func (h *TsigHeader) Rend(r *MsgRender) {
 	r.Skip(2)
 }
 
-func (h *TsigHeader) ToWire(buffer *util.OutputBuffer) {
-	h.Name.ToWire(buffer)
-	h.Rrtype.ToWire(buffer)
-	h.Class.ToWire(buffer)
-	h.Ttl.ToWire(buffer)
-	buffer.Skip(2)
+func (h *TsigHeader) ToWire(buf *util.OutputBuffer) {
+	h.Name.ToWire(buf)
+	h.Rrtype.ToWire(buf)
+	h.Class.ToWire(buf)
+	h.Ttl.ToWire(buf)
+	buf.Skip(2)
 }
 
 func (h *TsigHeader) String() string {
@@ -126,64 +126,64 @@ func (msg *Message) SetTSIG(key, secret string, alg string) error {
 	return nil
 }
 
-func TSIGFromWire(buffer *util.InputBuffer, ll uint16) (*TSIG, error) {
-	i, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
+	i, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	alg, _ := i.(*Name)
 	algo := TSIGAlgorithm(alg.String(false))
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	ts1, _ := i.(uint16)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT32, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	ts2, _ := i.(uint32)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	fudge, _ := i.(uint16)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	macSize, _ := i.(uint16)
 
-	i, _, err = fieldFromWire(RDF_C_BINARY, buffer, macSize)
+	i, _, err = fieldFromWire(RDF_C_BINARY, buf, macSize)
 	if err != nil {
 		return nil, err
 	}
 	ll -= macSize
 	mac, _ := i.([]byte)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	oid, _ := i.(uint16)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	erro, _ := i.(uint16)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	len, _ := i.(uint16)
 
-	i, _, err = fieldFromWire(RDF_C_BINARY, buffer, len)
+	i, _, err = fieldFromWire(RDF_C_BINARY, buf, len)
 	if err != nil {
 		return nil, err
 	}
@@ -237,23 +237,23 @@ func (t *TSIG) Rend(r *MsgRender) {
 	r.WriteUint16At(uint16(r.Len()-pos), pos-2)
 }
 
-func (t *TSIG) ToWire(buffer *util.OutputBuffer) {
-	t.Header.ToWire(buffer)
-	pos := buffer.Len()
+func (t *TSIG) ToWire(buf *util.OutputBuffer) {
+	t.Header.ToWire(buf)
+	pos := buf.Len()
 	alg, _ := NameFromString(string(t.Algorithm))
-	alg.ToWire(buffer)
+	alg.ToWire(buf)
 	ts1 := uint16((t.TimeSigned & 0x0000ffff00000000) >> 32)
 	ts2 := uint32(t.TimeSigned & 0x00000000ffffffff)
-	buffer.WriteUint16(ts1)
-	buffer.WriteUint32(ts2)
-	buffer.WriteUint16(t.Fudge)
-	buffer.WriteUint16(t.MACSize)
-	buffer.WriteData(t.MAC)
-	buffer.WriteUint16(t.OrigId)
-	buffer.WriteUint16(t.Error)
-	buffer.WriteUint16(t.OtherLen)
-	buffer.WriteData(t.OtherData)
-	buffer.WriteUint16At(uint16(buffer.Len()-pos), pos-2)
+	buf.WriteUint16(ts1)
+	buf.WriteUint32(ts2)
+	buf.WriteUint16(t.Fudge)
+	buf.WriteUint16(t.MACSize)
+	buf.WriteData(t.MAC)
+	buf.WriteUint16(t.OrigId)
+	buf.WriteUint16(t.Error)
+	buf.WriteUint16(t.OtherLen)
+	buf.WriteData(t.OtherData)
+	buf.WriteUint16At(uint16(buf.Len()-pos), pos-2)
 }
 
 func (t *TSIG) String() string {
@@ -304,20 +304,20 @@ func (twf *tsigWireFmt) Rend(r *MsgRender) {
 	r.WriteData(twf.OtherData)
 }
 
-func (twf *tsigWireFmt) ToWire(buffer *util.OutputBuffer) {
-	twf.Name.ToWire(buffer)
-	twf.Class.ToWire(buffer)
-	twf.Ttl.ToWire(buffer)
+func (twf *tsigWireFmt) ToWire(buf *util.OutputBuffer) {
+	twf.Name.ToWire(buf)
+	twf.Class.ToWire(buf)
+	twf.Ttl.ToWire(buf)
 	alg, _ := NameFromString(string(twf.Algorithm))
-	alg.ToWire(buffer)
+	alg.ToWire(buf)
 	ts1 := uint16((twf.TimeSigned & 0x0000ffff00000000) >> 32)
 	ts2 := uint32(twf.TimeSigned & 0x00000000ffffffff)
-	buffer.WriteUint16(ts1)
-	buffer.WriteUint32(ts2)
-	buffer.WriteUint16(twf.Fudge)
-	buffer.WriteUint16(twf.Error)
-	buffer.WriteUint16(twf.OtherLen)
-	buffer.WriteData(twf.OtherData)
+	buf.WriteUint16(ts1)
+	buf.WriteUint32(ts2)
+	buf.WriteUint16(twf.Fudge)
+	buf.WriteUint16(twf.Error)
+	buf.WriteUint16(twf.OtherLen)
+	buf.WriteData(twf.OtherData)
 }
 
 type macWirefmt struct {
@@ -330,9 +330,9 @@ func (mwf *macWirefmt) Rend(r *MsgRender) {
 	r.WriteData(mwf.MAC)
 }
 
-func (mwf *macWirefmt) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteUint16(mwf.MACSize)
-	buffer.WriteData(mwf.MAC)
+func (mwf *macWirefmt) ToWire(buf *util.OutputBuffer) {
+	buf.WriteUint16(mwf.MACSize)
+	buf.WriteData(mwf.MAC)
 }
 
 func (tsig *TSIG) RendTsig(header Header, render *MsgRender) []byte {
@@ -371,7 +371,7 @@ func (tsig *TSIG) RendTsig(header Header, render *MsgRender) []byte {
 func (tsig *TSIG) VerifyTsig(msg *Message, secret string, requestMac []byte) error {
 	msg.Tsig = nil
 	render := NewMsgRender()
-	msg.RecalculateSectionRrCount()
+	msg.RecalculateSectionRRCount()
 	msg.Rend(render)
 
 	buf := tsig.toWireFmtBuf(render.Data(), requestMac)

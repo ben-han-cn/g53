@@ -24,13 +24,13 @@ func (vo *ViewOpt) String() string {
 }
 
 //read from OPTION-LENGTH
-func viewOptFromWire(buffer *util.InputBuffer) (Option, error) {
-	l, err := buffer.ReadUint16()
+func viewOptFromWire(buf *util.InputBuffer) (Option, error) {
+	l, err := buf.ReadUint16()
 	if err != nil {
 		return nil, err
 	}
 
-	view, err := buffer.ReadBytes(uint(l))
+	view, err := buf.ReadBytes(uint(l))
 	if err != nil {
 		return nil, err
 	}
@@ -46,13 +46,13 @@ func viewOptFromRdata(rdata Rdata) Option {
 		return nil
 	}
 
-	buffer := util.NewInputBuffer(opt.Data)
-	code, _ := buffer.ReadUint16()
+	buf := util.NewInputBuffer(opt.Data)
+	code, _ := buf.ReadUint16()
 	if code != EDNS_VIEW {
 		return nil
 	}
 
-	option, err := viewOptFromWire(buffer)
+	option, err := viewOptFromWire(buf)
 	if err == nil {
 		return option
 	} else {

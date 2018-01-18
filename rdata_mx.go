@@ -19,9 +19,9 @@ func (mx *MX) Rend(r *MsgRender) {
 	rendField(RDF_C_NAME, mx.Exchange, r)
 }
 
-func (mx *MX) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_UINT16, mx.Preference, buffer)
-	fieldToWire(RDF_C_NAME, mx.Exchange, buffer)
+func (mx *MX) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_UINT16, mx.Preference, buf)
+	fieldToWire(RDF_C_NAME, mx.Exchange, buf)
 }
 
 func (mx *MX) Compare(other Rdata) int {
@@ -40,14 +40,14 @@ func (mx *MX) String() string {
 		fieldToString(RDF_D_NAME, mx.Exchange)}, " ")
 }
 
-func MXFromWire(buffer *util.InputBuffer, ll uint16) (*MX, error) {
-	f, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+func MXFromWire(buf *util.InputBuffer, ll uint16) (*MX, error) {
+	f, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	preference, _ := f.(uint16)
 
-	f, ll, err = fieldFromWire(RDF_C_NAME, buffer, ll)
+	f, ll, err = fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}

@@ -283,7 +283,7 @@ func NameFromStringUnsafe(s string) *Name {
 	return name
 }
 
-func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
+func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
 	n := uint(0)
 	nused := uint(0)
 	done := false
@@ -293,13 +293,13 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 	seenPointer := false
 	state := fwStart
 	cused := uint(0)
-	current := buffer.Position()
+	current := buf.Position()
 	posBegin := current
 	biggestPointer := current
 	newCurrent := uint(0)
 
-	for current < buffer.Len() && done == false {
-		c, _ := buffer.ReadUint8()
+	for current < buf.Len() && done == false {
+		c, _ := buf.ReadUint8()
 		current += 1
 
 		if seenPointer == false {
@@ -349,7 +349,7 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 			}
 			biggestPointer = newCurrent
 			current = newCurrent
-			buffer.SetPosition(current)
+			buf.SetPosition(current)
 			seenPointer = true
 			state = fwStart
 		default:
@@ -361,7 +361,7 @@ func NameFromWire(buffer *util.InputBuffer, downcase bool) (*Name, error) {
 		return nil, errors.New("imcomplete wire format")
 	}
 
-	buffer.SetPosition(posBegin + cused)
+	buf.SetPosition(posBegin + cused)
 	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
 }
 
@@ -698,8 +698,8 @@ func (name *Name) Rend(render *MsgRender) {
 	render.WriteName(name, true)
 }
 
-func (name *Name) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteData(name.raw)
+func (name *Name) ToWire(buf *util.OutputBuffer) {
+	buf.WriteData(name.raw)
 }
 
 func (name *Name) IsRoot() bool {

@@ -9,7 +9,7 @@ import (
 
 type Rdata interface {
 	Rend(r *MsgRender)
-	ToWire(buffer *util.OutputBuffer)
+	ToWire(buf *util.OutputBuffer)
 	Compare(Rdata) int
 	String() string
 }
@@ -26,8 +26,8 @@ var registor = map[RRType][]RDFieldType{
 }
 */
 
-func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
-	rdlen, err := buffer.ReadUint16()
+func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
+	rdlen, err := buf.ReadUint16()
 	if err != nil {
 		return nil, err
 	}
@@ -38,35 +38,35 @@ func RdataFromWire(t RRType, buffer *util.InputBuffer) (Rdata, error) {
 
 	switch t {
 	case RR_A:
-		return AFromWire(buffer, rdlen)
+		return AFromWire(buf, rdlen)
 	case RR_AAAA:
-		return AAAAFromWire(buffer, rdlen)
+		return AAAAFromWire(buf, rdlen)
 	case RR_CNAME:
-		return CNameFromWire(buffer, rdlen)
+		return CNameFromWire(buf, rdlen)
 	case RR_SOA:
-		return SOAFromWire(buffer, rdlen)
+		return SOAFromWire(buf, rdlen)
 	case RR_NS:
-		return NSFromWire(buffer, rdlen)
+		return NSFromWire(buf, rdlen)
 	case RR_OPT:
-		return OPTFromWire(buffer, rdlen)
+		return OPTFromWire(buf, rdlen)
 	case RR_PTR:
-		return PTRFromWire(buffer, rdlen)
+		return PTRFromWire(buf, rdlen)
 	case RR_SRV:
-		return SRVFromWire(buffer, rdlen)
+		return SRVFromWire(buf, rdlen)
 	case RR_NAPTR:
-		return NAPTRFromWire(buffer, rdlen)
+		return NAPTRFromWire(buf, rdlen)
 	case RR_DNAME:
-		return DNameFromWire(buffer, rdlen)
+		return DNameFromWire(buf, rdlen)
 	case RR_RRSIG:
-		return RRSigFromWire(buffer, rdlen)
+		return RRSigFromWire(buf, rdlen)
 	case RR_MX:
-		return MXFromWire(buffer, rdlen)
+		return MXFromWire(buf, rdlen)
 	case RR_TXT:
-		return TxtFromWire(buffer, rdlen)
+		return TxtFromWire(buf, rdlen)
 	case RR_SPF:
-		return SPFFromWire(buffer, rdlen)
+		return SPFFromWire(buf, rdlen)
 	case RR_TSIG:
-		return TSIGFromWire(buffer, rdlen)
+		return TSIGFromWire(buf, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}

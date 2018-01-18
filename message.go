@@ -2,12 +2,9 @@ package g53
 
 import (
 	"bytes"
-	"errors"
 
 	"g53/util"
 )
-
-var ErrQueryQuestionIsNotValid = errors.New("query should have exact one question")
 
 type SectionType int
 
@@ -24,7 +21,7 @@ type Section []*RRset
 func (section Section) rrCount() int {
 	count := 0
 	for _, rrset := range section {
-		rrCount := rrset.RrCount()
+		rrCount := rrset.RRCount()
 		//for empty rdata, just count as 1
 		if rrCount == 0 {
 			rrCount = 1
@@ -32,6 +29,26 @@ func (section Section) rrCount() int {
 		count += rrCount
 	}
 	return count
+}
+
+func (s Section) Rend(r *MsgRender) {
+	for _, rrset := range s {
+		rrset.Rend(r)
+	}
+}
+
+func (s Section) ToWire(buf *util.OutputBuffer) {
+	for _, rrset := range s {
+		rrset.ToWire(buf)
+	}
+}
+
+func (s Section) String() string {
+	var buf bytes.Buffer
+	for _, rrset := range s {
+		buf.WriteString(rrset.String())
+	}
+	return buf.String()
 }
 
 type Message struct {
@@ -42,7 +59,7 @@ type Message struct {
 	Tsig     *TSIG
 }
 
-func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
+func MakeQuery(name *Name, typ RRType, size int, dnssec bool) *Message {
 	h := Header{}
 	h.SetFlag(FLAG_RD, true)
 	h.Opcode = OP_QUERY
@@ -60,47 +77,41 @@ func MakeQuery(name *Name, typ RRType, msgSize int, dnssec bool) *Message {
 		Header:   h,
 		Question: q,
 		Edns: &EDNS{
-			UdpSize:     uint16(msgSize),
+			UdpSize:     uint16(size),
 			DnssecAware: dnssec,
 		},
 	}
 }
 
-func MessageFromWire(buffer *util.InputBuffer) (*Message, error) {
+func MessageFromWire(buf *util.InputBuffer) (*Message, error) {
 	m := Message{}
-	if err := m.FromWire(buffer); err != nil {
+	if err := m.FromWire(buf); err != nil {
 		return nil, err
 	} else {
 		return &m, nil
 	}
 }
 
-func (m *Message) FromWire(buffer *util.InputBuffer) error {
+func (m *Message) FromWire(buf *util.InputBuffer) error {
 	h := &m.Header
-	err := HeaderFromWire(h, buffer)
-	if err != nil {
+	if err := HeaderFromWire(h, buf); err != nil {
 		return err
 	}
 
-	m.Edns = nil
-	m.Tsig = nil
-
 	if h.QDCount == 1 {
-		q, err := QuestionFromWire(buffer)
+		q, err := QuestionFromWire(buf)
 		if err != nil {
 			return err
 		}
 		m.Question = q
-		// for axfr, if more than one package is returued, the second and
-		// following pkg will has no question
-		//} else if h.Opcode == OP_QUERY && h.Rcode != R_FORMERR {
-		// 	return ErrQueryQuestionIsNotValid
 	} else {
-		m.Question = nil
+		m.Question = nil //in axfr message, question could be nil
 	}
 
+	m.Edns = nil
+	m.Tsig = nil
 	for i := 0; i < SectionCount; i++ {
-		if err := m.sectionFromWire(SectionType(i), buffer); err != nil {
+		if err := m.sectionFromWire(SectionType(i), buf); err != nil {
 			return err
 		}
 	}
@@ -108,7 +119,7 @@ func (m *Message) FromWire(buffer *util.InputBuffer) error {
 	return nil
 }
 
-func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) error {
+func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 	var s Section
 	var count uint16
 	switch st {
@@ -120,33 +131,33 @@ func (m *Message) sectionFromWire(st SectionType, buffer *util.InputBuffer) erro
 		count = m.Header.ARCount
 	}
 
-	var lastRrset *RRset
+	var lastRRset *RRset
 	for i := uint16(0); i < count; i++ {
-		rrset, err := RRsetFromWire(buffer)
+		rrset, err := RRsetFromWire(buf)
 		if err != nil {
 			return err
 		}
 
-		if lastRrset == nil {
-			lastRrset = rrset
+		if lastRRset == nil {
+			lastRRset = rrset
 			continue
 		}
 
-		if lastRrset.IsSameRrset(rrset) {
-			lastRrset.Rdatas = append(lastRrset.Rdatas, rrset.Rdatas[0])
+		if lastRRset.IsSameRRset(rrset) {
+			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
 		} else {
-			s = append(s, lastRrset)
-			lastRrset = rrset
+			s = append(s, lastRRset)
+			lastRRset = rrset
 		}
 	}
 
-	if lastRrset != nil {
-		if st == AdditionalSection && lastRrset.Type == RR_OPT {
-			m.Edns = EdnsFromRRset(lastRrset)
-		} else if st == AdditionalSection && lastRrset.Type == RR_TSIG {
-			m.Tsig = TSIGFromRRset(lastRrset)
+	if lastRRset != nil {
+		if st == AdditionalSection && lastRRset.Type == RR_OPT {
+			m.Edns = EdnsFromRRset(lastRRset)
+		} else if st == AdditionalSection && lastRRset.Type == RR_TSIG {
+			m.Tsig = TSIGFromRRset(lastRRset)
 		} else {
-			s = append(s, lastRrset)
+			s = append(s, lastRRset)
 		}
 	}
 
@@ -174,7 +185,7 @@ func (m *Message) Rend(r *MsgRender) {
 	}
 }
 
-func (m *Message) RecalculateSectionRrCount() {
+func (m *Message) RecalculateSectionRRCount() {
 	if m.Question == nil {
 		m.Header.QDCount = 0
 	} else {
@@ -190,33 +201,21 @@ func (m *Message) RecalculateSectionRrCount() {
 	}
 }
 
-func (s Section) Rend(r *MsgRender) {
-	for _, rrset := range s {
-		rrset.Rend(r)
-	}
-}
-
-func (m *Message) ToWire(buffer *util.OutputBuffer) {
-	(&m.Header).ToWire(buffer)
+func (m *Message) ToWire(buf *util.OutputBuffer) {
+	(&m.Header).ToWire(buf)
 	if m.Question != nil {
-		m.Question.ToWire(buffer)
+		m.Question.ToWire(buf)
 	}
 
 	for i := 0; i < SectionCount; i++ {
-		m.Sections[i].ToWire(buffer)
-	}
-}
-
-func (s Section) ToWire(buffer *util.OutputBuffer) {
-	for _, rrset := range s {
-		rrset.ToWire(buffer)
+		m.Sections[i].ToWire(buf)
 	}
 }
 
 func (m *Message) String() string {
 	var buf bytes.Buffer
 	buf.WriteString(m.Header.String())
-	buf.WriteString("\n")
+	buf.WriteByte('\n')
 
 	if m.Edns != nil {
 		buf.WriteString(";; OPT PSEUDOSECTION:\n")
@@ -226,7 +225,7 @@ func (m *Message) String() string {
 	buf.WriteString(";; QUESTION SECTION:\n")
 	if m.Question != nil {
 		buf.WriteString(m.Question.String())
-		buf.WriteString("\n")
+		buf.WriteByte('\n')
 	}
 
 	if len(m.Sections[AnswerSection]) > 0 {
@@ -252,14 +251,6 @@ func (m *Message) String() string {
 	return buf.String()
 }
 
-func (s Section) String() string {
-	var buf bytes.Buffer
-	for _, rrset := range s {
-		buf.WriteString(rrset.String())
-	}
-	return buf.String()
-}
-
 func (m *Message) GetSection(st SectionType) Section {
 	return m.Sections[st]
 }
@@ -270,13 +261,15 @@ func (m *Message) Clear() {
 	for i := 0; i < SectionCount; i++ {
 		m.Sections[i] = nil
 	}
+	m.Edns = nil
+	m.Tsig = nil
 }
 
 func (m *Message) AddRRset(st SectionType, rrset *RRset) {
 	m.Sections[st] = append(m.Sections[st], rrset)
 }
 
-func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) {
+func (m *Message) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) {
 	if merge {
 		if i := m.rrsetIndex(st, name, typ, class); i != -1 {
 			m.Sections[st][i].AddRdata(rdata)
@@ -284,14 +277,14 @@ func (m *Message) AddRr(st SectionType, name *Name, typ RRType, class RRClass, t
 			return
 		}
 	}
-	newRRset := &RRset{
+
+	m.AddRRset(st, &RRset{
 		Name:   name,
 		Type:   typ,
 		Class:  class,
 		Ttl:    ttl,
 		Rdatas: []Rdata{rdata},
-	}
-	m.AddRRset(st, newRRset)
+	})
 }
 
 func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
@@ -307,10 +300,6 @@ func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRCla
 		}
 	}
 	return -1
-}
-
-func (m *Message) HasRRsetWithNameType(st SectionType, n *Name, t RRType) bool {
-	return false
 }
 
 func (m *Message) MakeResponse() *Message {
@@ -345,7 +334,7 @@ func (m *Message) ClearSection(s SectionType) {
 	}
 }
 
-func (m *Message) SectionRrCount(s SectionType) int {
+func (m *Message) SectionRRCount(s SectionType) int {
 	return m.Sections[s].rrCount()
 }
 

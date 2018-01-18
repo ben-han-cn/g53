@@ -15,8 +15,8 @@ func (aaaa *AAAA) Rend(r *MsgRender) {
 	rendField(RDF_C_IPV6, aaaa.Host, r)
 }
 
-func (aaaa *AAAA) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_IPV6, aaaa.Host, buffer)
+func (aaaa *AAAA) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_IPV6, aaaa.Host, buf)
 }
 
 func (aaaa *AAAA) Compare(other Rdata) int {
@@ -27,8 +27,8 @@ func (aaaa *AAAA) String() string {
 	return fieldToString(RDF_D_IP, aaaa.Host)
 }
 
-func AAAAFromWire(buffer *util.InputBuffer, ll uint16) (*AAAA, error) {
-	f, ll, err := fieldFromWire(RDF_C_IPV6, buffer, ll)
+func AAAAFromWire(buf *util.InputBuffer, ll uint16) (*AAAA, error) {
+	f, ll, err := fieldFromWire(RDF_C_IPV6, buf, ll)
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {

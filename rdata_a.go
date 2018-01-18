@@ -15,8 +15,8 @@ func (a *A) Rend(r *MsgRender) {
 	rendField(RDF_C_IPV4, a.Host, r)
 }
 
-func (a *A) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_IPV4, a.Host, buffer)
+func (a *A) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_IPV4, a.Host, buf)
 }
 
 func (a *A) Compare(other Rdata) int {
@@ -27,8 +27,8 @@ func (a *A) String() string {
 	return fieldToString(RDF_D_IP, a.Host)
 }
 
-func AFromWire(buffer *util.InputBuffer, ll uint16) (*A, error) {
-	f, ll, err := fieldFromWire(RDF_C_IPV4, buffer, ll)
+func AFromWire(buf *util.InputBuffer, ll uint16) (*A, error) {
+	f, ll, err := fieldFromWire(RDF_C_IPV4, buf, ll)
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {

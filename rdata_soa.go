@@ -28,14 +28,14 @@ func (soa *SOA) Rend(r *MsgRender) {
 	rendField(RDF_C_UINT32, soa.Minimum, r)
 }
 
-func (soa *SOA) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_NAME, soa.MName, buffer)
-	fieldToWire(RDF_C_NAME, soa.RName, buffer)
-	fieldToWire(RDF_C_UINT32, soa.Serial, buffer)
-	fieldToWire(RDF_C_UINT32, soa.Refresh, buffer)
-	fieldToWire(RDF_C_UINT32, soa.Retry, buffer)
-	fieldToWire(RDF_C_UINT32, soa.Expire, buffer)
-	fieldToWire(RDF_C_UINT32, soa.Minimum, buffer)
+func (soa *SOA) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_NAME, soa.MName, buf)
+	fieldToWire(RDF_C_NAME, soa.RName, buf)
+	fieldToWire(RDF_C_UINT32, soa.Serial, buf)
+	fieldToWire(RDF_C_UINT32, soa.Refresh, buf)
+	fieldToWire(RDF_C_UINT32, soa.Retry, buf)
+	fieldToWire(RDF_C_UINT32, soa.Expire, buf)
+	fieldToWire(RDF_C_UINT32, soa.Minimum, buf)
 }
 
 func (soa *SOA) Compare(other Rdata) int {
@@ -54,44 +54,44 @@ func (soa *SOA) String() string {
 	return strings.Join(ss, " ")
 }
 
-func SOAFromWire(buffer *util.InputBuffer, ll uint16) (*SOA, error) {
-	name, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+func SOAFromWire(buf *util.InputBuffer, ll uint16) (*SOA, error) {
+	name, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	mname, _ := name.(*Name)
 
-	name, ll, err = fieldFromWire(RDF_C_NAME, buffer, ll)
+	name, ll, err = fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	rname, _ := name.(*Name)
 
-	i, ll, err := fieldFromWire(RDF_C_UINT32, buffer, ll)
+	i, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	serial, _ := i.(uint32)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT32, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	refresh, _ := i.(uint32)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT32, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	retry, _ := i.(uint32)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT32, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 	expire, _ := i.(uint32)
 
-	i, ll, err = fieldFromWire(RDF_C_UINT32, buffer, ll)
+	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}

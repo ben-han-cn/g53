@@ -7,9 +7,9 @@ import (
 
 func TestSOAFromToWire(t *testing.T) {
 	soa_wire, _ := util.HexStrToBytes("002b026e73076578616d706c6503636f6d0004726f6f74c00577ce5bb900000e100000012c0036ee80000004b0")
-	buffer := util.NewInputBuffer(soa_wire)
+	buf := util.NewInputBuffer(soa_wire)
 
-	rr, err := RdataFromWire(RR_SOA, buffer)
+	rr, err := RdataFromWire(RR_SOA, buf)
 	if err != nil {
 		t.Fatalf("soa from wire failed with %v", err)
 	}

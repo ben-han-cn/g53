@@ -13,8 +13,8 @@ func (p *PTR) Rend(r *MsgRender) {
 	rendField(RDF_C_NAME, p.Name, r)
 }
 
-func (p *PTR) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_NAME, p.Name, buffer)
+func (p *PTR) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_NAME, p.Name, buf)
 }
 
 func (p *PTR) Compare(other Rdata) int {
@@ -25,8 +25,8 @@ func (p *PTR) String() string {
 	return fieldToString(RDF_D_NAME, p.Name)
 }
 
-func PTRFromWire(buffer *util.InputBuffer, ll uint16) (*PTR, error) {
-	n, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+func PTRFromWire(buf *util.InputBuffer, ll uint16) (*PTR, error) {
+	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 
 	if err != nil {
 		return nil, err

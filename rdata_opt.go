@@ -14,8 +14,8 @@ func (opt *OPT) Rend(r *MsgRender) {
 	rendField(RDF_C_BINARY, opt.Data, r)
 }
 
-func (opt *OPT) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_BINARY, opt.Data, buffer)
+func (opt *OPT) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_BINARY, opt.Data, buf)
 }
 
 func (opt *OPT) Compare(other Rdata) int {
@@ -26,8 +26,8 @@ func (opt *OPT) String() string {
 	return fieldToString(RDF_D_HEX, opt.Data)
 }
 
-func OPTFromWire(buffer *util.InputBuffer, ll uint16) (*OPT, error) {
-	f, ll, err := fieldFromWire(RDF_C_BINARY, buffer, ll)
+func OPTFromWire(buf *util.InputBuffer, ll uint16) (*OPT, error) {
+	f, ll, err := fieldFromWire(RDF_C_BINARY, buf, ll)
 
 	if err != nil {
 		return nil, err

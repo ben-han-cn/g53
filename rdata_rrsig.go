@@ -32,16 +32,16 @@ func (rrsig *RRSig) Rend(r *MsgRender) {
 	rendField(RDF_C_BINARY, rrsig.Signature, r)
 }
 
-func (rrsig *RRSig) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_UINT16, uint16(rrsig.Covered), buffer)
-	fieldToWire(RDF_C_UINT8, rrsig.Algorithm, buffer)
-	fieldToWire(RDF_C_UINT8, rrsig.Labels, buffer)
-	fieldToWire(RDF_C_UINT32, rrsig.OriginalTtl, buffer)
-	fieldToWire(RDF_C_UINT32, rrsig.SigExpire, buffer)
-	fieldToWire(RDF_C_UINT32, rrsig.Inception, buffer)
-	fieldToWire(RDF_C_UINT16, rrsig.Tag, buffer)
-	fieldToWire(RDF_C_NAME, rrsig.Signer, buffer)
-	fieldToWire(RDF_C_BINARY, rrsig.Signature, buffer)
+func (rrsig *RRSig) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_UINT16, uint16(rrsig.Covered), buf)
+	fieldToWire(RDF_C_UINT8, rrsig.Algorithm, buf)
+	fieldToWire(RDF_C_UINT8, rrsig.Labels, buf)
+	fieldToWire(RDF_C_UINT32, rrsig.OriginalTtl, buf)
+	fieldToWire(RDF_C_UINT32, rrsig.SigExpire, buf)
+	fieldToWire(RDF_C_UINT32, rrsig.Inception, buf)
+	fieldToWire(RDF_C_UINT16, rrsig.Tag, buf)
+	fieldToWire(RDF_C_NAME, rrsig.Signer, buf)
+	fieldToWire(RDF_C_BINARY, rrsig.Signature, buf)
 }
 
 func (rrsig *RRSig) Compare(other Rdata) int {
@@ -111,48 +111,48 @@ func (rrsig *RRSig) String() string {
 	return buf.String()
 }
 
-func RRSigFromWire(buffer *util.InputBuffer, ll uint16) (*RRSig, error) {
-	covered, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+func RRSigFromWire(buf *util.InputBuffer, ll uint16) (*RRSig, error) {
+	covered, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	algorithm, ll, err := fieldFromWire(RDF_C_UINT8, buffer, ll)
+	algorithm, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	labels, ll, err := fieldFromWire(RDF_C_UINT8, buffer, ll)
+	labels, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	originalTtl, ll, err := fieldFromWire(RDF_C_UINT32, buffer, ll)
+	originalTtl, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	sigExpire, ll, err := fieldFromWire(RDF_C_UINT32, buffer, ll)
+	sigExpire, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	inception, ll, err := fieldFromWire(RDF_C_UINT32, buffer, ll)
+	inception, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	tag, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+	tag, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	signer, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+	signer, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	signature, ll, err := fieldFromWire(RDF_C_BINARY, buffer, ll)
+	signature, ll, err := fieldFromWire(RDF_C_BINARY, buf, ll)
 	if err != nil {
 		return nil, err
 	}

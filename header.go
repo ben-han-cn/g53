@@ -59,19 +59,19 @@ func (h *Header) SetFlag(ff FlagField, set bool) {
 	}
 }
 
-func HeaderFromWire(h *Header, buffer *util.InputBuffer) error {
-	if buffer.Len() < 12 {
+func HeaderFromWire(h *Header, buf *util.InputBuffer) error {
+	if buf.Len() < 12 {
 		return errors.New("too short wire data for message header")
 	}
-	h.Id, _ = buffer.ReadUint16()
-	flag, _ := buffer.ReadUint16()
+	h.Id, _ = buf.ReadUint16()
+	flag, _ := buf.ReadUint16()
 	h.Flag = HeaderFlag(flag & HEADERFLAG_MASK)
 	h.Opcode = Opcode((flag & OPCODE_MASK) >> OPCODE_SHIFT)
 	h.Rcode = Rcode(flag & RCODE_MASK)
-	h.QDCount, _ = buffer.ReadUint16()
-	h.ANCount, _ = buffer.ReadUint16()
-	h.NSCount, _ = buffer.ReadUint16()
-	h.ARCount, _ = buffer.ReadUint16()
+	h.QDCount, _ = buf.ReadUint16()
+	h.ANCount, _ = buf.ReadUint16()
+	h.NSCount, _ = buf.ReadUint16()
+	h.ARCount, _ = buf.ReadUint16()
 	return nil
 }
 
@@ -91,13 +91,13 @@ func (h *Header) flag() uint16 {
 	return flag
 }
 
-func (h *Header) ToWire(buffer *util.OutputBuffer) {
-	buffer.WriteUint16(h.Id)
-	buffer.WriteUint16(h.flag())
-	buffer.WriteUint16(h.QDCount)
-	buffer.WriteUint16(h.ANCount)
-	buffer.WriteUint16(h.NSCount)
-	buffer.WriteUint16(h.ARCount)
+func (h *Header) ToWire(buf *util.OutputBuffer) {
+	buf.WriteUint16(h.Id)
+	buf.WriteUint16(h.flag())
+	buf.WriteUint16(h.QDCount)
+	buf.WriteUint16(h.ANCount)
+	buf.WriteUint16(h.NSCount)
+	buf.WriteUint16(h.ARCount)
 }
 
 func (h *Header) String() string {

@@ -28,7 +28,7 @@ func TestTsig(t *testing.T) {
 	Assert(t, err == nil, "create new tsig")
 	msg.Tsig.TimeSigned = uint64(1497866044)
 
-	msg.RecalculateSectionRrCount()
+	msg.RecalculateSectionRRCount()
 	render := NewMsgRender()
 	msg.Rend(render)
 	Assert(t, bytes.Equal(render.Data(), bindBuf), "msg with tsig format error")
@@ -55,7 +55,7 @@ func TestVerify(t *testing.T) {
 	tsig := msg.Tsig
 	render := NewMsgRender()
 	msg.Tsig = nil
-	msg.RecalculateSectionRrCount()
+	msg.RecalculateSectionRRCount()
 	msg.Rend(render)
 	mac := tsig.RendTsig(msg.Header, render)
 
@@ -86,7 +86,7 @@ func TestTSIGFromRRset(t *testing.T) {
 
 	tsig := msg.Tsig
 	msg.Tsig = nil
-	msg.RecalculateSectionRrCount()
+	msg.RecalculateSectionRRCount()
 	render := NewMsgRender()
 	msg.Rend(render)
 	mac := tsig.RendTsig(msg.Header, render)

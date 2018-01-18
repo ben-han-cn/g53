@@ -8,8 +8,8 @@ import (
 
 func matchEdns(t *testing.T, rawData string, expectEdns EDNS) {
 	edns_wire, _ := util.HexStrToBytes(rawData)
-	buffer := util.NewInputBuffer(edns_wire)
-	edns, err := EdnsFromWire(buffer)
+	buf := util.NewInputBuffer(edns_wire)
+	edns, err := EdnsFromWire(buf)
 	Assert(t, err == nil, "wire data is valid")
 	Assert(t, edns.String() == expectEdns.String(), "edns should match")
 

@@ -23,11 +23,11 @@ func (srv *SRV) Rend(r *MsgRender) {
 	rendField(RDF_C_NAME_UNCOMPRESS, srv.Target, r)
 }
 
-func (srv *SRV) ToWire(buffer *util.OutputBuffer) {
-	fieldToWire(RDF_C_UINT16, srv.Priority, buffer)
-	fieldToWire(RDF_C_UINT16, srv.Weight, buffer)
-	fieldToWire(RDF_C_UINT16, srv.Port, buffer)
-	fieldToWire(RDF_C_NAME, srv.Target, buffer)
+func (srv *SRV) ToWire(buf *util.OutputBuffer) {
+	fieldToWire(RDF_C_UINT16, srv.Priority, buf)
+	fieldToWire(RDF_C_UINT16, srv.Weight, buf)
+	fieldToWire(RDF_C_UINT16, srv.Port, buf)
+	fieldToWire(RDF_C_NAME, srv.Target, buf)
 }
 
 func (srv *SRV) Compare(other Rdata) int {
@@ -59,23 +59,23 @@ func (srv *SRV) String() string {
 	return strings.Join(ss, " ")
 }
 
-func SRVFromWire(buffer *util.InputBuffer, ll uint16) (*SRV, error) {
-	p, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+func SRVFromWire(buf *util.InputBuffer, ll uint16) (*SRV, error) {
+	p, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	w, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+	w, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	port, ll, err := fieldFromWire(RDF_C_UINT16, buffer, ll)
+	port, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	}
 
-	t, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
+	t, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
