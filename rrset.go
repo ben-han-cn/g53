@@ -571,6 +571,22 @@ func (rrset *RRset) AddRdata(rdata Rdata) error {
 	return nil
 }
 
+func (rrset *RRset) RemoveRdata(rdata Rdata) bool {
+	for i, oldRdata := range rrset.Rdatas {
+		if oldRdata.Compare(rdata) == 0 {
+			rdatas := rrset.Rdatas
+			if len(rdatas) == 1 {
+				rrset.Rdatas = nil
+			} else {
+				rrset.Rdatas = append(rdatas[:i], rdatas[i+1:]...)
+			}
+			return true
+		}
+	}
+
+	return false
+}
+
 func (rrset *RRset) RotateRdata() {
 	rrCount := rrset.RRCount()
 	if rrCount < 2 {

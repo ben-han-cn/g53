@@ -518,6 +518,10 @@ func (name *Name) IsWildCard() bool {
 }
 
 func (name *Name) Concat(suffixes ...*Name) (*Name, error) {
+	if len(suffixes) == 1 && suffixes[0].IsRoot() {
+		return name, nil
+	}
+
 	finalLength := name.length
 	finalLabelCount := name.labelCount
 	suffixCount := uint(len(suffixes))

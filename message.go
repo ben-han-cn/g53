@@ -181,7 +181,8 @@ func (m *Message) Rend(r *MsgRender) {
 	}
 
 	if m.Tsig != nil {
-		m.Tsig.RendTsig(m.Header, r)
+		m.Tsig.Rend(r)
+		r.WriteUint16At(uint16(m.Header.ARCount+1), 10)
 	}
 }
 

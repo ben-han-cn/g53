@@ -14,18 +14,6 @@ type Rdata interface {
 	String() string
 }
 
-/*
-var registor = map[RRType][]RDFieldType{
-	RR_SRV:        []RDFieldType{RDF_UINT16, RDF_UINT16, RDF_UINT16, RDF_NAME},
-	RR_NAPTR:      []RDFieldType{RDF_UINT16, RDF_UINT16, RDF_STR, RDF_STR, RDF_STR, RDF_NAME},
-	RR_DS:         []RDFieldType{RDF_UINT16, RDF_UINT8, RDF_UINT8, RDF_B64},
-	RR_RRSIG:      []RDFieldType{RDF_UINT16, RDF_UINT8, RDF_UINT8, RDF_UINT32, RDF_UINT32, RDF_UINT32, RDF_UINT16, RDF_NAME, RDF_B64},
-	RR_DNSKEY:     []RDFieldType{RDF_UINT16, RDF_UINT8, RDF_UINT8, RDF_B64},
-	RR_NSEC3:      []RDFieldType{RDF_UINT8, RDF_UINT8, RDF_UINT16, RDF_MID_BINARY, RDF_MID_BINARY, RDF_B64},
-	RR_NSEC3PARAM: []RDFieldType{RDF_UINT8, RDF_UINT8, RDF_UINT16, RDF_MID_BINARY},
-}
-*/
-
 func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 	rdlen, err := buf.ReadUint16()
 	if err != nil {
@@ -63,6 +51,8 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 		return MXFromWire(buf, rdlen)
 	case RR_TXT:
 		return TxtFromWire(buf, rdlen)
+	case RR_RP:
+		return RPFromWire(buf, rdlen)
 	case RR_SPF:
 		return SPFFromWire(buf, rdlen)
 	case RR_TSIG:
@@ -100,6 +90,8 @@ func RdataFromString(t RRType, s string) (Rdata, error) {
 		return MXFromString(s)
 	case RR_TXT:
 		return TxtFromString(s)
+	case RR_RP:
+		return RPFromString(s)
 	case RR_SPF:
 		return SPFFromString(s)
 	default:

@@ -24,8 +24,21 @@ func TestNameConcat(t *testing.T) {
 		NameFromStringUnsafe("g"),
 		NameFromStringUnsafe("h"),
 	)
+	NameEqToStr(t, name, "a.b.c.d.e.f.g.h")
 
-	NameEqToStr(t, name, "a.b.c.d.e.f.g")
+	name, _ = NameFromStringUnsafe("a").Concat(
+		NameFromStringUnsafe("b"),
+		NameFromStringUnsafe("c"),
+		NameFromStringUnsafe("d"),
+		NameFromStringUnsafe("e"),
+		NameFromStringUnsafe("f"),
+		NameFromStringUnsafe("g"),
+		NameFromStringUnsafe("h"),
+	)
+	NameEqToStr(t, name, "a.b.c.d.e.f.g.h")
+
+	name, _ = NameFromStringUnsafe("a").Concat(Root)
+	NameEqToStr(t, name, "a")
 }
 
 func TestNameSplit(t *testing.T) {

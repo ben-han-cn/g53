@@ -1,9 +1,9 @@
 package g53
 
 import (
+	"bytes"
 	"errors"
 	"regexp"
-	"strings"
 
 	"g53/util"
 )
@@ -43,15 +43,23 @@ func (soa *SOA) Compare(other Rdata) int {
 }
 
 func (soa *SOA) String() string {
-	var ss []string
-	ss = append(ss, fieldToString(RDF_D_NAME, soa.MName))
-	ss = append(ss, fieldToString(RDF_D_NAME, soa.RName))
-	ss = append(ss, fieldToString(RDF_D_INT, soa.Serial))
-	ss = append(ss, fieldToString(RDF_D_INT, soa.Refresh))
-	ss = append(ss, fieldToString(RDF_D_INT, soa.Retry))
-	ss = append(ss, fieldToString(RDF_D_INT, soa.Expire))
-	ss = append(ss, fieldToString(RDF_D_INT, soa.Minimum))
-	return strings.Join(ss, " ")
+	var buf bytes.Buffer
+	buf.WriteString(fieldToString(RDF_D_NAME, soa.MName))
+	buf.WriteByte(' ')
+	buf.WriteString(fieldToString(RDF_D_NAME, soa.RName))
+	buf.WriteByte(' ')
+	buf.WriteString(fieldToString(RDF_D_INT, soa.Serial))
+	buf.WriteByte(' ')
+	buf.WriteString(fieldToString(RDF_D_INT, soa.Refresh))
+	buf.WriteByte(' ')
+	buf.WriteString(fieldToString(RDF_D_INT, soa.Retry))
+	buf.WriteByte(' ')
+	buf.WriteString(fieldToString(RDF_D_INT, soa.Expire))
+	buf.WriteByte(' ')
+	buf.WriteString(fieldToString(RDF_D_INT, soa.Minimum))
+	buf.WriteByte(' ')
+
+	return buf.String()
 }
 
 func SOAFromWire(buf *util.InputBuffer, ll uint16) (*SOA, error) {
@@ -156,4 +164,25 @@ func SOAFromString(s string) (*SOA, error) {
 	minimum, _ := i.(int)
 
 	return &SOA{mname, rname, uint32(serial), uint32(refresh), uint32(retry), uint32(expire), uint32(minimum)}, nil
+}
+
+const year68 = 1 << 31 // For RFC1982 (Serial Arithmetic)
+func CompareSerial(serial1, serial2 uint32) int {
+	if serial1 == serial2 {
+		return 0
+	}
+
+	if serial1 < serial2 {
+		if serial2-serial1 < year68 {
+			return -1
+		} else {
+			return 1
+		}
+	} else {
+		if serial1-serial2 < year68 {
+			return 1
+		} else {
+			return -1
+		}
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -361,7 +362,7 @@ func fieldFromString(dt RDFDisplayType, s string) (interface{}, error) {
 		}
 
 	case RDF_D_STR:
-		return s, nil
+		return strings.Trim(s, "\""), nil
 
 	default:
 		panic("unknown display type")
@@ -416,9 +417,17 @@ func fieldToString(dt RDFDisplayType, d interface{}) string {
 
 //txt record rdata should be put into qoute
 //it could include multi segment
-func txtStringParse(s string) ([]string, error) {
-	strs := []string{}
+var spaceReg = regexp.MustCompile(`\s+`)
 
+func txtStringParse(txt string) ([]string, error) {
+	s := strings.TrimSpace(txt)
+	//add quote
+	if strings.HasPrefix(s, "\"") == false {
+		s = strings.Replace(s, "\"", "\\\"", -1) //only hanle one level embed
+		s = "\"" + spaceReg.ReplaceAllString(s, "\" \"") + "\""
+	}
+
+	strs := []string{}
 	inQuote := false
 	startEscape := false
 	lastPos := 0

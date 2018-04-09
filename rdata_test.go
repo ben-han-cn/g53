@@ -1,7 +1,6 @@
 package g53
 
 import (
-	//"fmt"
 	"testing"
 
 	"g53/util"
@@ -61,6 +60,10 @@ func TestTxtParse(t *testing.T) {
 		"\"good \\\"boy\" \"bad boy\"",
 		"   \"good\" \"v=1 boy\"  ",
 		"\"good",
+		"good boy",
+		"good     boy",
+		"\"good boy\"",
+		"good \"boy\"",
 	}
 	type expectResult struct {
 		err  error
@@ -86,6 +89,26 @@ func TestTxtParse(t *testing.T) {
 			err:  ErrQuoteInTxtIsNotInPair,
 			strs: nil,
 		},
+
+		expectResult{
+			err:  nil,
+			strs: []string{"good", "boy"},
+		},
+
+		expectResult{
+			err:  nil,
+			strs: []string{"good", "boy"},
+		},
+
+		expectResult{
+			err:  nil,
+			strs: []string{"good boy"},
+		},
+
+		expectResult{
+			err:  nil,
+			strs: []string{"good", "\\\"boy\\\""},
+		},
 	}
 
 	for i, txt := range txts {
@@ -94,8 +117,10 @@ func TestTxtParse(t *testing.T) {
 		if expects[i].strs == nil {
 			Assert(t, ss == nil, "")
 		} else {
-			Assert(t, ss[0] == expects[i].strs[0], "")
-			Assert(t, ss[1] == expects[i].strs[1], "")
+			Assert(t, len(ss) == len(expects[i].strs), "")
+			for j, s := range ss {
+				Assert(t, s == expects[i].strs[j], "")
+			}
 		}
 	}
 }

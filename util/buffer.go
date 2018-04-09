@@ -6,8 +6,8 @@ import (
 
 type InputBuffer struct {
 	pos     uint
-	datalen uint
 	data    []byte
+	datalen uint
 }
 
 func NewInputBuffer(bytes []byte) *InputBuffer {

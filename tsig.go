@@ -91,23 +91,23 @@ type TSIG struct {
 	hash       hash.Hash
 }
 
-func (msg *Message) SetTSIG(key, secret string, alg string) error {
+func NewTSIG(key, secret string, alg string) (*TSIG, error) {
 	name, err := NameFromString(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	algo, err := AlgorithmFromString(alg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	h, err := hashSelect(algo, secret)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	msg.Tsig = &TSIG{
+	return &TSIG{
 		Header: &TsigHeader{
 			Name:     name,
 			Rrtype:   RR_TSIG,
@@ -117,13 +117,16 @@ func (msg *Message) SetTSIG(key, secret string, alg string) error {
 		},
 		Algorithm:  algo,
 		TimeSigned: uint64(time.Now().Unix()),
-		OrigId:     msg.Header.Id,
 		Fudge:      300,
 		Error:      0,
 		OtherLen:   0,
 		hash:       h,
-	}
-	return nil
+	}, nil
+}
+
+func (msg *Message) SetTSIG(tsig *TSIG) {
+	tsig.OrigId = msg.Header.Id
+	msg.Tsig = tsig
 }
 
 func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
@@ -219,6 +222,7 @@ func TSIGFromRRset(rrset *RRset) *TSIG {
 }
 
 func (t *TSIG) Rend(r *MsgRender) {
+	t.genMessageHash(r.Data())
 	t.Header.Rend(r)
 	pos := r.Len()
 	alg, _ := NameFromString(string(t.Algorithm))
@@ -335,37 +339,13 @@ func (mwf *macWirefmt) ToWire(buf *util.OutputBuffer) {
 	buf.WriteData(mwf.MAC)
 }
 
-func (tsig *TSIG) RendTsig(header Header, render *MsgRender) []byte {
-	var mac []byte
+func (tsig *TSIG) genMessageHash(messageRaw []byte) {
 	if tsig.Error == 0 {
-		buf := tsig.toWireFmtBuf(render.Data(), tsig.MAC)
+		buf := tsig.toWireFmtBuf(messageRaw, tsig.MAC)
 		tsig.hash.Write(buf)
-		mac = tsig.hash.Sum(nil)
-	} else {
-		mac = nil
+		tsig.MAC = tsig.hash.Sum(nil)
+		tsig.MACSize = uint16(len(tsig.MAC))
 	}
-
-	(&TSIG{
-		Header: &TsigHeader{
-			Name:   tsig.Header.Name,
-			Rrtype: RR_TSIG,
-			Class:  CLASS_ANY,
-			Ttl:    RRTTL(0),
-		},
-		Algorithm:  tsig.Algorithm,
-		TimeSigned: tsig.TimeSigned,
-		Fudge:      tsig.Fudge,
-		MAC:        mac,
-		MACSize:    uint16(len(mac)),
-		OrigId:     header.Id,
-		Error:      tsig.Error,
-		OtherLen:   tsig.OtherLen,
-		OtherData:  tsig.OtherData,
-	}).Rend(render)
-
-	render.WriteUint16At(uint16(header.ARCount+1), 10)
-
-	return mac
 }
 
 func (tsig *TSIG) VerifyTsig(msg *Message, secret string, requestMac []byte) error {

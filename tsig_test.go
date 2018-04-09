@@ -24,8 +24,9 @@ func TestTsig(t *testing.T) {
 
 	msg.UpdateAddRRset(rrset)
 
-	err := msg.SetTSIG("test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
+	tsig, err := NewTSIG("test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
 	Assert(t, err == nil, "create new tsig")
+	msg.SetTSIG(tsig)
 	msg.Tsig.TimeSigned = uint64(1497866044)
 
 	msg.RecalculateSectionRRCount()
@@ -49,18 +50,12 @@ func TestVerify(t *testing.T) {
 	}
 	msg.UpdateAddRRset(rrset)
 
-	err := msg.SetTSIG("key_test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
+	tsig, err := NewTSIG("key_test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
 	Assert(t, err == nil, "msg set tsig failed")
-
-	tsig := msg.Tsig
+	msg.SetTSIG(tsig)
 	render := NewMsgRender()
-	msg.Tsig = nil
 	msg.RecalculateSectionRRCount()
 	msg.Rend(render)
-	mac := tsig.RendTsig(msg.Header, render)
-
-	msg.Tsig = tsig
-	msg.Tsig.MAC = mac
 	err = msg.Tsig.VerifyTsig(msg, "z08GzEnlCDGy/W3Zw/2NHg==", nil)
 	Assert(t, err == nil, "tsig verify failed")
 }
@@ -81,18 +76,13 @@ func TestTSIGFromRRset(t *testing.T) {
 
 	msg.UpdateAddRRset(rrset)
 
-	err := msg.SetTSIG("key_test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
+	tsig, err := NewTSIG("key_test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
 	Assert(t, err == nil, "tsig create failed")
+	msg.SetTSIG(tsig)
 
-	tsig := msg.Tsig
-	msg.Tsig = nil
 	msg.RecalculateSectionRRCount()
 	render := NewMsgRender()
 	msg.Rend(render)
-	mac := tsig.RendTsig(msg.Header, render)
-
-	tsig.MAC = mac
-	tsig.MACSize = uint16(len(mac))
 	msgFromBuf, err := MessageFromWire(util.NewInputBuffer(render.Data()))
 	Assert(t, err == nil, "message from wire failed")
 	Assert(t, msgFromBuf.Tsig.String() == tsig.String(), "tsig from rrset failed")

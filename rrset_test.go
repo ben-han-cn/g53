@@ -77,6 +77,11 @@ func TestRRsetRoateRdata(t *testing.T) {
 	Equal(t, rrset.Rdatas[0].String(), ra1.String())
 	Equal(t, rrset.Rdatas[1].String(), ra2.String())
 	Equal(t, rrset.Rdatas[2].String(), ra3.String())
+
+	rrset.RemoveRdata(ra1)
+	Equal(t, rrset.RRCount(), 2)
+	Equal(t, rrset.Rdatas[0].String(), ra2.String())
+	Equal(t, rrset.Rdatas[1].String(), ra3.String())
 }
 
 func TestRRsetSortRdata(t *testing.T) {
@@ -131,6 +136,7 @@ func TestRRsetFromString(t *testing.T) {
 		"fred.example.com.                 6 IN A    192.168.0.4",
 		"ftp.example.com.                  7 IN CNAME    www.example.com.",
 		"1.1.0.10.in-addr.arpa. 100 IN PTR a.com.",
+		"naptr.example.com.                8 IN NAPTR 101 10 \"u\" \"sip+E2U\" \"!^.*$!sip:userA@mytest.cn!\" .",
 	}
 
 	soaRdata := &SOA{
@@ -181,6 +187,20 @@ func TestRRsetFromString(t *testing.T) {
 		Ttl:    RRTTL(7),
 		Rdatas: []Rdata{&PTR{Name: NameFromStringUnsafe("a.com.")}}}
 
+	naptr := &RRset{Name: NameFromStringUnsafe("naptr.example.com."),
+		Type:  RR_NAPTR,
+		Class: CLASS_IN,
+		Ttl:   RRTTL(8),
+		Rdatas: []Rdata{&NAPTR{
+			Order:       101,
+			Preference:  10,
+			Flags:       "u",
+			Services:    "sip+E2U",
+			Regexp:      "!^.*$!sip:userA@mytest.cn!",
+			Replacement: NameFromStringUnsafe("."),
+		}},
+	}
+
 	expectedRRset := []*RRset{
 		soa,
 		ns,
@@ -188,12 +208,13 @@ func TestRRsetFromString(t *testing.T) {
 		a,
 		cname,
 		ptr,
+		naptr,
 	}
 
 	for i, line := range lines {
 		rrset, err := RRsetFromString(line)
 		Assert(t, err == nil, "all rrset is valid %v", err)
-		Assert(t, rrset.Equals(expectedRRset[i]), "")
+		Assert(t, rrset.Equals(expectedRRset[i]), "want [%s] but get [%s]", expectedRRset[i].String(), rrset.String())
 	}
 
 	rrsigStr := ".           86400   IN  RRSIG   SOA 8 0 86400 20170522050000 20170509040000 14796 . AwEAAaHIwpx3w4VHKi6i1LHnTaWeHCL154Jug0Rtc9ji5qwPXpBo6A5sRv7cSsPQKPIwxLpyCrbJ4mr2L0EPOdvP6z6YfljK2ZmTbogU9aSU2fiq/4wjxbdkLyoDVgtO+JsxNN4bjr4WcWhsmk1Hg93FV9ZpkWb0Tbad8DFqNDzr//kZ"
