@@ -1,7 +1,6 @@
 package g53
 
 import (
-	"errors"
 	"fmt"
 
 	"g53/util"
@@ -57,6 +56,10 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 		return SPFFromWire(buf, rdlen)
 	case RR_TSIG:
 		return TSIGFromWire(buf, rdlen)
+	case RR_NSEC3:
+		return NSEC3FromWire(buf, rdlen)
+	case RR_DS:
+		return DSFromWire(buf, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
@@ -94,7 +97,11 @@ func RdataFromString(t RRType, s string) (Rdata, error) {
 		return RPFromString(s)
 	case RR_SPF:
 		return SPFFromString(s)
+	case RR_NSEC3:
+		return NSEC3FromString(s)
+	case RR_DS:
+		return DSFromString(s)
 	default:
-		return nil, errors.New("unimplement type")
+		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
 }
