@@ -68,6 +68,10 @@ func (node *Node) IsEmpty() bool {
 	return node.data == nil
 }
 
+func (node *Node) IsLeaf() bool {
+	return node.down == NULL_NODE
+}
+
 func (node *Node) GetFlag(flag RBNodeFlag) bool {
 	return (node.flag & flag) != 0
 }
@@ -136,4 +140,31 @@ func (node *Node) Clean() {
 	node.parent = NULL_NODE
 	node.name = nil
 	node.data = nil
+}
+
+type ValueCloneFunc func(interface{}) interface{}
+
+func DefaultValueCloneFunc(v interface{}) interface{} {
+	return v
+}
+
+func (n *Node) Clone(valueConeFunc ValueCloneFunc) *Node {
+	if n == NULL_NODE {
+		return NULL_NODE
+	}
+
+	new := *n
+	if new.data != nil {
+		new.data = valueConeFunc(new.data)
+	}
+	new.left = new.left.Clone(valueConeFunc)
+	new.right = new.right.Clone(valueConeFunc)
+	if new.left != NULL_NODE {
+		new.left.parent = &new
+	}
+	if new.right != NULL_NODE {
+		new.right.parent = &new
+	}
+	new.down = new.down.Clone(valueConeFunc)
+	return &new
 }

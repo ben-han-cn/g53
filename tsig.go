@@ -125,7 +125,9 @@ func NewTSIG(key, secret string, alg string) (*TSIG, error) {
 }
 
 func (msg *Message) SetTSIG(tsig *TSIG) {
-	tsig.OrigId = msg.Header.Id
+	if tsig != nil {
+		tsig.OrigId = msg.Header.Id
+	}
 	msg.Tsig = tsig
 }
 

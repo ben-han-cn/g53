@@ -426,3 +426,41 @@ func TestTreeForEach(t *testing.T) {
 	})
 	ut.Equal(t, tree.nodeCount, nodeCount)
 }
+
+func TestRemoveEmptyNode(t *testing.T) {
+	tree := NewDomainTree(true)
+	treeInsertString(tree, ".")
+	treeInsertString(tree, "cn.")
+	treeInsertString(tree, "a.cn.")
+	node, _ := treeInsertString(tree, "com.")
+	node.SetData(1)
+
+	ut.Equal(t, tree.NodeCount(), 4)
+	ut.Equal(t, tree.EmptyLeafNodeRatio(), 25)
+
+	new := tree.RemoveEmptyLeafNode()
+	ut.Equal(t, new.NodeCount(), 3)
+	new = new.RemoveEmptyLeafNode()
+	ut.Equal(t, new.NodeCount(), 2)
+}
+
+func cloneIntPoint(v interface{}) interface{} {
+	var n int
+	n = *(v.(*int))
+	return &n
+}
+
+func TestClone(t *testing.T) {
+	tree := createDomainTree(true)
+	new := tree.Clone(nil)
+	ut.Equal(t, new.NodeCount(), tree.NodeCount())
+
+	names := []string{
+		"c", "b", "a", "x.d.e.f", "z.d.e.f", "g.h", "i.g.h", "o.w.y.d.e.f",
+		"j.z.d.e.f", "p.w.y.d.e.f", "q.w.y.d.e.f"}
+
+	for i, n := range names {
+		node, _ := new.Search(g53.NameFromStringUnsafe(n))
+		ut.Equal(t, i+1, node.Data().(int))
+	}
+}

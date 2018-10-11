@@ -363,21 +363,41 @@ func (tree *DomainTree) indent(depth int) {
 }
 
 func (tree *DomainTree) ForEach(fn func(*Node)) {
-	tree.forEachHelper(tree.root, fn)
+	tree.forEachHelper(tree.root, tree.returnEmptyNode, fn)
 }
 
-func (tree *DomainTree) forEachHelper(node *Node, fn func(*Node)) {
+func (tree *DomainTree) forEachHelper(node *Node, returnEmptyNode bool, fn func(*Node)) {
 	if node == NULL_NODE {
 		return
 	}
 
-	if tree.returnEmptyNode || node.IsEmpty() == false {
+	if returnEmptyNode || node.IsEmpty() == false {
 		fn(node)
 	}
 
-	tree.forEachHelper(node.left, fn)
-	tree.forEachHelper(node.right, fn)
-	tree.forEachHelper(node.down, fn)
+	tree.forEachHelper(node.left, returnEmptyNode, fn)
+	tree.forEachHelper(node.right, returnEmptyNode, fn)
+	tree.forEachHelper(node.down, returnEmptyNode, fn)
+}
+
+func (tree *DomainTree) ForEachEx(fn func(*g53.Name, *Node)) {
+	tree.forEachExHelper(tree.root, g53.Root, tree.returnEmptyNode, fn)
+}
+
+func (tree *DomainTree) forEachExHelper(node *Node, parentFullName *g53.Name, returnEmptyNode bool, fn func(*g53.Name, *Node)) {
+	if node == NULL_NODE {
+		return
+	}
+
+	if returnEmptyNode || node.IsEmpty() == false {
+		newParent, _ := node.name.Concat(parentFullName)
+		fn(newParent, node)
+	}
+
+	tree.forEachExHelper(node.left, parentFullName, returnEmptyNode, fn)
+	tree.forEachExHelper(node.right, parentFullName, returnEmptyNode, fn)
+	newParent, _ := node.name.Concat(parentFullName)
+	tree.forEachExHelper(node.down, newParent, returnEmptyNode, fn)
 }
 
 func (tree *DomainTree) IsNodeNonTerminal(node *Node) bool {
@@ -424,4 +444,40 @@ func (tree *DomainTree) anyHelper(node *Node, fn func(*Node) bool) bool {
 	return tree.anyHelper(node.left, fn) ||
 		tree.anyHelper(node.right, fn) ||
 		tree.anyHelper(node.down, fn)
+}
+
+func (tree *DomainTree) EmptyLeafNodeRatio() int {
+	if tree.nodeCount == 0 {
+		return 0
+	}
+
+	emptyNodeCount := 0
+	tree.forEachHelper(tree.root, true, func(node *Node) {
+		if node.IsEmpty() && node.IsLeaf() {
+			emptyNodeCount += 1
+		}
+	})
+	return (emptyNodeCount * 100 / tree.nodeCount)
+}
+
+func (tree *DomainTree) RemoveEmptyLeafNode() *DomainTree {
+	new := NewDomainTree(tree.returnEmptyNode)
+	tree.forEachExHelper(tree.root, g53.Root, true, func(name *g53.Name, node *Node) {
+		if node.IsEmpty() == false || node.IsLeaf() == false {
+			n, _ := new.Insert(name)
+			n.SetData(node.Data())
+		}
+	})
+	return new
+}
+
+func (tree *DomainTree) Clone(valueConeFunc ValueCloneFunc) *DomainTree {
+	if valueConeFunc == nil {
+		valueConeFunc = DefaultValueCloneFunc
+	}
+
+	new := NewDomainTree(tree.returnEmptyNode)
+	new.root = tree.root.Clone(valueConeFunc)
+	new.nodeCount = tree.nodeCount
+	return new
 }
