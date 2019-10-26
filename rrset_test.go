@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/zdnscloud/g53/util"
+	"github.com/ben-han-cn/g53/util"
 )
 
 func matchRRsetRaw(t *testing.T, rawData string, rs *RRset) {

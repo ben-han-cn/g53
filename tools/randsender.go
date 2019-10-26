@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/zdnscloud/g53"
+	"github.com/ben-han-cn/g53"
 )
 
 var (

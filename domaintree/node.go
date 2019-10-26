@@ -1,7 +1,7 @@
 package domaintree
 
 import (
-	"github.com/zdnscloud/g53"
+	"github.com/ben-han-cn/g53"
 )
 
 type RBNodeFlag uint32

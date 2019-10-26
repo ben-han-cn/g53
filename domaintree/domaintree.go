@@ -3,7 +3,7 @@ package domaintree
 import (
 	"errors"
 	"fmt"
-	"github.com/zdnscloud/g53"
+	"github.com/ben-han-cn/g53"
 )
 
 type SearchResult int
