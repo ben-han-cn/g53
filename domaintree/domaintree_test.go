@@ -1,9 +1,10 @@
 package domaintree
 
 import (
+	"fmt"
 	"testing"
 
-	ut "github.com/zdnscloud/cement/unittest"
+	ut "github.com/ben-han-cn/cement/unittest"
 	"github.com/ben-han-cn/g53"
 )
 
@@ -41,7 +42,7 @@ func createDomainTree(returnEmptyNode bool) *DomainTree {
 }
 
 func TestTreeNodeCount(t *testing.T) {
-	ut.Equal(t, createDomainTree(false).NodeCount(), 13)
+	ut.Equal(t, createDomainTree(false).NodeCount(), 14)
 }
 
 func TestTreeInsert(t *testing.T) {
@@ -52,7 +53,7 @@ func TestTreeInsert(t *testing.T) {
 	node, err = treeInsertString(tree, "d.e.f")
 	ut.Equal(t, err, nil)
 	ut.Equal(t, node.name.String(true), "d.e.f")
-	ut.Equal(t, tree.nodeCount, 13)
+	ut.Equal(t, tree.nodeCount, 14)
 
 	node, err = tree.Insert(g53.Root)
 	ut.Assert(t, err == nil, "inert root domain should ok but get %v", err)
@@ -380,7 +381,7 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 	node, ret = tree.Search(g53.NameFromStringUnsafe("c"))
 	ut.Equal(t, ret, ExactMatch)
 	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("bb"), chain, nil, nil)
-	ut.Equal(t, ret, NotFound)
+	ut.Equal(t, ret, PartialMatch)
 	//ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, -1, 1, g53.COMMONANCESTOR)
 	chain.clear()
@@ -388,7 +389,7 @@ func TestTreeNodeChainLastComparison(t *testing.T) {
 	// Search stops in the highest level after following a right branch.
 	// (the expected node is the same as the previous case)
 	_, ret = tree.SearchExt(g53.NameFromStringUnsafe("d"), chain, nil, nil)
-	ut.Equal(t, ret, NotFound)
+	ut.Equal(t, ret, PartialMatch)
 	ut.Equal(t, chain.lastCompared, node)
 	comparisonChecks(t, chain, 1, 1, g53.COMMONANCESTOR)
 	chain.clear()
@@ -427,23 +428,6 @@ func TestTreeForEach(t *testing.T) {
 	ut.Equal(t, tree.nodeCount, nodeCount)
 }
 
-func TestRemoveEmptyNode(t *testing.T) {
-	tree := NewDomainTree(true)
-	treeInsertString(tree, ".")
-	treeInsertString(tree, "cn.")
-	treeInsertString(tree, "a.cn.")
-	node, _ := treeInsertString(tree, "com.")
-	node.SetData(1)
-
-	ut.Equal(t, tree.NodeCount(), 4)
-	ut.Equal(t, tree.EmptyLeafNodeRatio(), 25)
-
-	new := tree.RemoveEmptyLeafNode()
-	ut.Equal(t, new.NodeCount(), 3)
-	new = new.RemoveEmptyLeafNode()
-	ut.Equal(t, new.NodeCount(), 2)
-}
-
 func cloneIntPoint(v interface{}) interface{} {
 	var n int
 	n = *(v.(*int))
@@ -463,4 +447,58 @@ func TestClone(t *testing.T) {
 		node, _ := new.Search(g53.NameFromStringUnsafe(n))
 		ut.Equal(t, i+1, node.Data().(int))
 	}
+}
+
+func TestTreeRemove(t *testing.T) {
+	tree := createDomainTree(true)
+	names := []string{"c", "b", "a", "x.d.e.f", "z.d.e.f", "g.h", "i.g.h", "o.w.y.d.e.f", "j.z.d.e.f", "p.w.y.d.e.f", "q.w.y.d.e.f"}
+
+	for _, n := range names {
+		node, ret := tree.Search(g53.NameFromStringUnsafe(n))
+		ut.Equal(t, ret, ExactMatch)
+		err := tree.Remove(g53.NameFromStringUnsafe(n))
+		ut.Equal(t, err, nil)
+		_, ret = tree.Search(g53.NameFromStringUnsafe(n))
+		ut.Equal(t, ret != ExactMatch, node.IsLeaf())
+	}
+	ut.Equal(t, 0, tree.NodeCount())
+}
+
+func TestTreeRemoveRandomDomain(t *testing.T) {
+	tree := NewDomainTree(true)
+	for i := 0; i < 100; i++ {
+		err := removeRandDomain(tree)
+		ut.Equal(t, err, nil)
+	}
+}
+
+func removeRandDomain(tree *DomainTree) error {
+	var names []*g53.Name
+	for i := 1; i < 1000; i++ {
+		name := g53.NameFromStringUnsafe(g53.RandomNoneFQDNDomain())
+		node, err := tree.Insert(name)
+		if err == nil {
+			names = append(names, name)
+			node.data = i
+		}
+	}
+
+	for _, name := range names {
+		node, ret := tree.Search(name)
+		if ret != ExactMatch {
+			return fmt.Errorf("no found name: %v in the tree\n", name.String(false))
+		}
+		err := tree.Remove(name)
+		if err != nil {
+			return fmt.Errorf("remove %s failed: %v\n", name.String(false), err.Error())
+		}
+		_, ret = tree.Search(name)
+		if node.IsLeaf() && ret == ExactMatch {
+			return fmt.Errorf("should remove name %s but found in tree\n", name.String(false))
+		}
+	}
+	if 0 != tree.NodeCount() {
+		return fmt.Errorf("should remove all name but found %v names in tree\n", tree.NodeCount())
+	}
+	return nil
 }
