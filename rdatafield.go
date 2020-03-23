@@ -160,9 +160,6 @@ func fieldFromWire(ct RDFCodingType, buf *util.InputBuffer, ll uint16) (interfac
 		if err != nil {
 			return nil, ll, err
 		}
-		if ll < uint16(l) {
-			return nil, ll, ErrDataIsTooShort
-		}
 
 		clone := make([]byte, l)
 		copy(clone, d)
