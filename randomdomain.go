@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"math/rand"
 
-	"github.com/zdnscloud/cement/randomdata"
+	"github.com/ben-han-cn/cement/randomdata"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz0123456789-"
