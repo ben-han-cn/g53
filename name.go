@@ -369,6 +369,10 @@ func (name *Name) Length() uint {
 	return name.length
 }
 
+func (name *Name) Bytes() []byte {
+	return name.raw
+}
+
 func (name *Name) LabelCount() uint {
 	return name.labelCount
 }
