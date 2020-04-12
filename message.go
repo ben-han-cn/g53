@@ -316,6 +316,7 @@ func (m *Message) MakeResponse() *Message {
 	return &Message{
 		Header:   h,
 		Question: m.Question,
+		Edns:     m.Edns,
 	}
 }
 
