@@ -20,7 +20,11 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 	}
 
 	if rdlen == 0 {
-		return nil, nil
+		if t != RR_OPT {
+			return nil, fmt.Errorf("non-opt type has empty rdata")
+		} else {
+			return nil, nil
+		}
 	}
 
 	switch t {

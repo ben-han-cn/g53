@@ -1,8 +1,9 @@
 package g53
 
 import (
-	"github.com/ben-han-cn/g53/util"
 	"testing"
+
+	"github.com/ben-han-cn/g53/util"
 )
 
 func buildHeader(id uint16, setFlag []FlagField, counts []uint16, opcode Opcode, rcode Rcode) Header {

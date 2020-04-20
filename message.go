@@ -2,6 +2,7 @@ package g53
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/ben-han-cn/g53/util"
 )
@@ -138,12 +139,19 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 			return err
 		}
 
+		if rrset.Type == RR_OPT && st != AdditionalSection {
+			return fmt.Errorf("opt rr exist in non-addtional section")
+		}
+
 		if lastRRset == nil {
 			lastRRset = rrset
 			continue
 		}
 
 		if lastRRset.IsSameRRset(rrset) {
+			if rrset.Type == RR_OPT {
+				return fmt.Errorf("opt should has only one rdata")
+			}
 			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
 		} else {
 			s = append(s, lastRRset)
