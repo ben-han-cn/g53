@@ -19,12 +19,9 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 		return nil, err
 	}
 
+	//RR_OPT or rr in UPDATE message may have empty rdlen
 	if rdlen == 0 {
-		if t != RR_OPT {
-			return nil, fmt.Errorf("non-opt type has empty rdata")
-		} else {
-			return nil, nil
-		}
+		return nil, nil
 	}
 
 	switch t {
