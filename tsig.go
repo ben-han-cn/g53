@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"strconv"
 	"strings"
@@ -212,7 +213,11 @@ func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
 	}, nil
 }
 
-func TSIGFromRRset(rrset *RRset) *TSIG {
+func TSIGFromRRset(rrset *RRset) (*TSIG, error) {
+	if len(rrset.Rdatas) == 0 {
+		return nil, fmt.Errorf("tsig rrset with empty rdata")
+	}
+
 	tsig := rrset.Rdatas[0].(*TSIG)
 	tsig.Header = &TsigHeader{
 		Name:   rrset.Name,
@@ -220,7 +225,7 @@ func TSIGFromRRset(rrset *RRset) *TSIG {
 		Class:  rrset.Class,
 		Ttl:    rrset.Ttl,
 	}
-	return tsig
+	return tsig, nil
 }
 
 func (t *TSIG) Rend(r *MsgRender) {

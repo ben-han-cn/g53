@@ -152,6 +152,9 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 			if rrset.Type == RR_OPT {
 				return fmt.Errorf("opt should has only one rdata")
 			}
+			if len(rrset.Rdatas) == 0 {
+				return fmt.Errorf("duplicate rrset with empty rdata")
+			}
 			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
 		} else {
 			s = append(s, lastRRset)
@@ -163,7 +166,11 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		if st == AdditionalSection && lastRRset.Type == RR_OPT {
 			m.Edns = EdnsFromRRset(lastRRset)
 		} else if st == AdditionalSection && lastRRset.Type == RR_TSIG {
-			m.Tsig = TSIGFromRRset(lastRRset)
+			if tsig, err := TSIGFromRRset(lastRRset); err != nil {
+				return err
+			} else {
+				m.Tsig = tsig
+			}
 		} else {
 			s = append(s, lastRRset)
 		}
