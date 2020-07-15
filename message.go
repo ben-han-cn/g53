@@ -69,7 +69,7 @@ func MakeQuery(name *Name, typ RRType, size int, dnssec bool) *Message {
 	h.ARCount = 1
 
 	q := &Question{
-		Name:  name,
+		Name:  *name,
 		Type:  typ,
 		Class: CLASS_IN,
 	}

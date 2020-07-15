@@ -7,32 +7,37 @@ import (
 )
 
 type Question struct {
-	Name  *Name
+	Name  Name
 	Type  RRType
 	Class RRClass
 }
 
 func QuestionFromWire(buf *util.InputBuffer) (*Question, error) {
-	n, err := NameFromWire(buf, false)
-	if err != nil {
+	var q Question
+	if err := q.FromWire(buf); err != nil {
 		return nil, err
+	} else {
+		return &q, nil
+	}
+}
+
+func (q *Question) FromWire(buf *util.InputBuffer) error {
+	if err := q.Name.FromWire(buf, false); err != nil {
+		return err
 	}
 
 	t, err := TypeFromWire(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cls, err := ClassFromWire(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return &Question{
-		Name:  n,
-		Type:  t,
-		Class: cls,
-	}, nil
+	q.Type = t
+	q.Class = cls
+	return nil
 }
 
 func (q *Question) Rend(r *MsgRender) {
@@ -52,7 +57,7 @@ func (q *Question) String() string {
 }
 
 func (q *Question) Equals(o *Question) bool {
-	return q.Name.Equals(o.Name) &&
+	return q.Name.Equals(&o.Name) &&
 		q.Type == o.Type &&
 		q.Class == o.Class
 }
