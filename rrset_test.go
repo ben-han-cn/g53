@@ -20,7 +20,7 @@ func matchRRsetRaw(t *testing.T, rawData string, rs *RRset) {
 }
 
 func matchRRset(t *testing.T, nrs *RRset, rs *RRset) {
-	Assert(t, nrs.Name.Equals(rs.Name), fmt.Sprintf("%s != %s", nrs.Name.String(false), rs.Name.String(false)))
+	Assert(t, nrs.Name.Equals(&rs.Name), fmt.Sprintf("%s != %s", nrs.Name.String(false), rs.Name.String(false)))
 	Equal(t, nrs.Type, rs.Type)
 	Equal(t, nrs.Class, rs.Class)
 	Equal(t, len(nrs.Rdatas), len(rs.Rdatas))
@@ -33,7 +33,7 @@ func TestRRsetFromToWire(t *testing.T) {
 	n, _ := NameFromString("test.example.com.")
 	ra, _ := AFromString("192.0.2.1")
 	matchRRsetRaw(t, "0474657374076578616d706c6503636f6d000001000100000e100004c0000201", &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -47,7 +47,7 @@ func TestRRsetRoateRdata(t *testing.T) {
 	ra3, _ := AFromString("3.3.3.3")
 	n, _ := NameFromString("test.example.com.")
 	rrset := &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -90,7 +90,7 @@ func TestRRsetSortRdata(t *testing.T) {
 	ra3, _ := AFromString("3.3.3.3")
 	n, _ := NameFromString("test.example.com.")
 	rrset := &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -109,7 +109,7 @@ func TestRRsetEquals(t *testing.T) {
 	ra3, _ := NSFromString("c.com.")
 	n, _ := NameFromString("test.example.com.")
 	rrset1 := &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_NS,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -118,7 +118,7 @@ func TestRRsetEquals(t *testing.T) {
 
 	ra4, _ := NSFromString("C.com.")
 	rrset2 := &RRset{
-		Name:   n,
+		Name:   *n,
 		Type:   RR_NS,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -148,46 +148,46 @@ func TestRRsetFromString(t *testing.T) {
 		Expire:  604800,
 		Minimum: 10800,
 	}
-	soa := &RRset{Name: NameFromStringUnsafe("example.com."),
+	soa := &RRset{Name: *NameFromStringUnsafe("example.com."),
 		Type:   RR_SOA,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(1),
 		Rdatas: []Rdata{soaRdata},
 	}
 
-	ns := &RRset{Name: NameFromStringUnsafe("example.com."),
+	ns := &RRset{Name: *NameFromStringUnsafe("example.com."),
 		Type:   RR_NS,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(2),
 		Rdatas: []Rdata{&NS{Name: NameFromStringUnsafe("ns1.example.com.")}},
 	}
 
-	mx := &RRset{Name: NameFromStringUnsafe("example.com."),
+	mx := &RRset{Name: *NameFromStringUnsafe("example.com."),
 		Type:   RR_MX,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(4),
 		Rdatas: []Rdata{&MX{Preference: 10, Exchange: NameFromStringUnsafe("mail.example.com.")}},
 	}
 
-	a := &RRset{Name: NameFromStringUnsafe("fred.example.com."),
+	a := &RRset{Name: *NameFromStringUnsafe("fred.example.com."),
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(6),
 		Rdatas: []Rdata{&A{Host: net.ParseIP("192.168.0.4").To4()}}}
 
-	cname := &RRset{Name: NameFromStringUnsafe("ftp.example.com."),
+	cname := &RRset{Name: *NameFromStringUnsafe("ftp.example.com."),
 		Type:   RR_CNAME,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(7),
 		Rdatas: []Rdata{&CName{Name: NameFromStringUnsafe("www.example.com.")}}}
 
-	ptr := &RRset{Name: NameFromStringUnsafe("1.1.0.10.in-addr.arpa."),
+	ptr := &RRset{Name: *NameFromStringUnsafe("1.1.0.10.in-addr.arpa."),
 		Type:   RR_PTR,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(7),
 		Rdatas: []Rdata{&PTR{Name: NameFromStringUnsafe("a.com.")}}}
 
-	naptr := &RRset{Name: NameFromStringUnsafe("naptr.example.com."),
+	naptr := &RRset{Name: *NameFromStringUnsafe("naptr.example.com."),
 		Type:  RR_NAPTR,
 		Class: CLASS_IN,
 		Ttl:   RRTTL(8),

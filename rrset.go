@@ -376,7 +376,7 @@ func (t RRType) String() string {
 }
 
 type RRset struct {
-	Name   *Name
+	Name   Name
 	Type   RRType
 	Class  RRClass
 	Ttl    RRTTL
@@ -419,7 +419,7 @@ func RRsetFromString(s string) (*RRset, error) {
 	}
 
 	return &RRset{
-		Name:   name,
+		Name:   *name,
 		Type:   typ,
 		Class:  cls,
 		Ttl:    ttl,
@@ -428,29 +428,37 @@ func RRsetFromString(s string) (*RRset, error) {
 }
 
 func RRsetFromWire(buf *util.InputBuffer) (*RRset, error) {
-	name, err := NameFromWire(buf, false)
-	if err != nil {
+	var rrset RRset
+	if err := rrset.FromWire(buf); err != nil {
 		return nil, err
+	} else {
+		return &rrset, nil
+	}
+}
+
+func (rrset *RRset) FromWire(buf *util.InputBuffer) error {
+	if err := rrset.Name.FromWire(buf, false); err != nil {
+		return err
 	}
 
 	typ, err := TypeFromWire(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cls, err := ClassFromWire(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	ttl, err := TTLFromWire(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	rdata, err := RdataFromWire(typ, buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var rdatas []Rdata
@@ -458,13 +466,11 @@ func RRsetFromWire(buf *util.InputBuffer) (*RRset, error) {
 		rdatas = []Rdata{rdata}
 	}
 
-	return &RRset{
-		Name:   name,
-		Type:   typ,
-		Class:  cls,
-		Ttl:    ttl,
-		Rdatas: rdatas,
-	}, nil
+	rrset.Type = typ
+	rrset.Class = cls
+	rrset.Ttl = ttl
+	rrset.Rdatas = rdatas
+	return nil
 }
 
 func (rrset *RRset) Rend(r *MsgRender) {
@@ -531,7 +537,7 @@ func (rrset *RRset) RRCount() int {
 }
 
 func (rrset *RRset) IsSameRRset(other *RRset) bool {
-	return (rrset.Type == other.Type) && rrset.Name.Equals(other.Name)
+	return (rrset.Type == other.Type) && rrset.Name.Equals(&other.Name)
 }
 
 func (rrset *RRset) Equals(other *RRset) bool {
@@ -611,7 +617,7 @@ func (rrset *RRset) Clone() *RRset {
 	rdatas := make([]Rdata, rdataCount, rdataCount)
 	copy(rdatas, rrset.Rdatas)
 	return &RRset{
-		Name:   rrset.Name,
+		Name:   rrset.Name.Clone(),
 		Type:   rrset.Type,
 		Class:  rrset.Class,
 		Ttl:    rrset.Ttl,

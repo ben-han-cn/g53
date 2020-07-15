@@ -393,6 +393,19 @@ func (name *Name) LabelCount() uint {
 	return name.labelCount
 }
 
+func (n *Name) Clone() Name {
+	raw := make([]byte, len(n.raw))
+	copy(raw, n.raw)
+	offsets := make([]byte, len(n.offsets))
+	copy(offsets, n.offsets)
+	return Name{
+		raw:        raw,
+		offsets:    offsets,
+		length:     n.length,
+		labelCount: n.labelCount,
+	}
+}
+
 func (name *Name) String(omitFinalDot bool) string {
 	var result bytes.Buffer
 	for i := uint(0); i < name.length; {

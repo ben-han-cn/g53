@@ -15,7 +15,7 @@ func TestTsig(t *testing.T) {
 	name := NameFromStringUnsafe("gg.a.test.")
 	rdata1, _ := AFromString("1.1.1.7")
 	rrset := &RRset{
-		Name:   name,
+		Name:   *name,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -42,7 +42,7 @@ func TestVerify(t *testing.T) {
 	name := NameFromStringUnsafe("gg.a.test.")
 	rdata1, _ := AFromString("1.1.1.7")
 	rrset := &RRset{
-		Name:   name,
+		Name:   *name,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),
@@ -67,7 +67,7 @@ func TestTSIGFromRRset(t *testing.T) {
 	name := NameFromStringUnsafe("gg.a.test.")
 	rdata1, _ := AFromString("1.1.1.7")
 	rrset := &RRset{
-		Name:   name,
+		Name:   *name,
 		Type:   RR_A,
 		Class:  CLASS_IN,
 		Ttl:    RRTTL(3600),

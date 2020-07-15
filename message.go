@@ -17,12 +17,12 @@ const (
 
 const SectionCount = 3
 
-type Section []*RRset
+type Section []RRset
 
-func (section Section) rrCount() int {
+func (s Section) rrCount() int {
 	count := 0
-	for _, rrset := range section {
-		rrCount := rrset.RRCount()
+	for i := 0; i < len(s); i++ {
+		rrCount := s[i].RRCount()
 		//for empty rdata, just count as 1
 		if rrCount == 0 {
 			rrCount = 1
@@ -33,21 +33,21 @@ func (section Section) rrCount() int {
 }
 
 func (s Section) Rend(r *MsgRender) {
-	for _, rrset := range s {
-		rrset.Rend(r)
+	for i := 0; i < len(s); i++ {
+		s[i].Rend(r)
 	}
 }
 
 func (s Section) ToWire(buf *util.OutputBuffer) {
-	for _, rrset := range s {
-		rrset.ToWire(buf)
+	for i := 0; i < len(s); i++ {
+		s[i].ToWire(buf)
 	}
 }
 
 func (s Section) String() string {
 	var buf bytes.Buffer
-	for _, rrset := range s {
-		buf.WriteString(rrset.String())
+	for i := 0; i < len(s); i++ {
+		buf.WriteString(s[i].String())
 	}
 	return buf.String()
 }
@@ -55,6 +55,7 @@ func (s Section) String() string {
 type Message struct {
 	Header   Header
 	Question *Question
+	question Question
 	Sections [SectionCount]Section
 	Edns     *EDNS
 	Tsig     *TSIG
@@ -68,20 +69,20 @@ func MakeQuery(name *Name, typ RRType, size int, dnssec bool) *Message {
 	h.QDCount = 1
 	h.ARCount = 1
 
-	q := &Question{
-		Name:  *name,
-		Type:  typ,
-		Class: CLASS_IN,
-	}
-
-	return &Message{
-		Header:   h,
-		Question: q,
+	m := &Message{
+		Header: h,
+		question: Question{
+			Name:  *name,
+			Type:  typ,
+			Class: CLASS_IN,
+		},
 		Edns: &EDNS{
 			UdpSize:     uint16(size),
 			DnssecAware: dnssec,
 		},
 	}
+	m.Question = &m.question
+	return m
 }
 
 func MessageFromWire(buf *util.InputBuffer) (*Message, error) {
@@ -94,17 +95,15 @@ func MessageFromWire(buf *util.InputBuffer) (*Message, error) {
 }
 
 func (m *Message) FromWire(buf *util.InputBuffer) error {
-	h := &m.Header
-	if err := HeaderFromWire(h, buf); err != nil {
+	if err := m.Header.FromWire(buf); err != nil {
 		return err
 	}
 
-	if h.QDCount == 1 {
-		q, err := QuestionFromWire(buf)
-		if err != nil {
+	if m.Header.QDCount == 1 {
+		if err := m.question.FromWire(buf); err != nil {
 			return err
 		}
-		m.Question = q
+		m.Question = &m.question
 	} else {
 		m.Question = nil //in axfr message, question could be nil
 	}
@@ -132,10 +131,11 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		count = m.Header.ARCount
 	}
 
+	rrsets := make([]RRset, count)
 	var lastRRset *RRset
 	for i := uint16(0); i < count; i++ {
-		rrset, err := RRsetFromWire(buf)
-		if err != nil {
+		rrset := &rrsets[i]
+		if err := rrset.FromWire(buf); err != nil {
 			return err
 		}
 
@@ -157,7 +157,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 			}
 			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
 		} else {
-			s = append(s, lastRRset)
+			s = append(s, *lastRRset)
 			lastRRset = rrset
 		}
 	}
@@ -172,7 +172,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 				m.Tsig = tsig
 			}
 		} else {
-			s = append(s, lastRRset)
+			s = append(s, *lastRRset)
 		}
 	}
 
@@ -282,7 +282,7 @@ func (m *Message) Clear() {
 }
 
 func (m *Message) AddRRset(st SectionType, rrset *RRset) {
-	m.Sections[st] = append(m.Sections[st], rrset)
+	m.Sections[st] = append(m.Sections[st], *rrset)
 }
 
 func (m *Message) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) {
@@ -295,7 +295,7 @@ func (m *Message) AddRR(st SectionType, name *Name, typ RRType, class RRClass, t
 	}
 
 	m.AddRRset(st, &RRset{
-		Name:   name,
+		Name:   name.Clone(),
 		Type:   typ,
 		Class:  class,
 		Ttl:    ttl,
@@ -304,14 +304,15 @@ func (m *Message) AddRR(st SectionType, name *Name, typ RRType, class RRClass, t
 }
 
 func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
-	return m.rrsetIndex(st, rrset.Name, rrset.Type, rrset.Class) != -1
+	return m.rrsetIndex(st, &rrset.Name, rrset.Type, rrset.Class) != -1
 }
 
 func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRClass) int {
-	for i, rrset := range m.Sections[st] {
-		if rrset.Class == class &&
-			rrset.Type == typ &&
-			rrset.Name.Equals(name) {
+	s := m.Sections[st]
+	for i := 0; i < len(s); i++ {
+		if s[i].Class == class &&
+			s[i].Type == typ &&
+			s[i].Name.Equals(name) {
 			return i
 		}
 	}
@@ -328,11 +329,13 @@ func (m *Message) MakeResponse() *Message {
 	h.SetFlag(FLAG_QR, true)
 	h.SetFlag(FLAG_RD, m.Header.GetFlag(FLAG_RD))
 
-	return &Message{
+	resp := &Message{
 		Header:   h,
-		Question: m.Question,
+		question: m.question,
 		Edns:     m.Edns,
 	}
+	resp.Question = &resp.question
+	return resp
 }
 
 func (m *Message) ClearSection(s SectionType) {

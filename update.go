@@ -25,7 +25,7 @@ func MakeUpdate(zone *Name) *Message {
 func (m *Message) UpdateNameExists(names []*Name) {
 	for _, name := range names {
 		m.AddRRset(AnswerSection, &RRset{
-			Name:  name,
+			Name:  *name,
 			Type:  RR_ANY,
 			Class: CLASS_ANY,
 			Ttl:   0,
@@ -37,7 +37,7 @@ func (m *Message) UpdateNameExists(names []*Name) {
 func (m *Message) UpdateNameNotExists(names []*Name) {
 	for _, name := range names {
 		m.AddRRset(AnswerSection, &RRset{
-			Name:  name,
+			Name:  *name,
 			Type:  RR_ANY,
 			Class: CLASS_NONE,
 			Ttl:   0,
@@ -88,7 +88,7 @@ func (m *Message) UpdateRemoveRRset(rrset *RRset) {
 // delete all rrset with name
 func (m *Message) UpdateRemoveName(name *Name) {
 	m.AddRRset(AuthSection, &RRset{
-		Name:  name,
+		Name:  *name,
 		Type:  RR_ANY,
 		Class: CLASS_ANY,
 		Ttl:   0,

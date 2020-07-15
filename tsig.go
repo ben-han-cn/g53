@@ -46,7 +46,7 @@ var ErrSig = errors.New("signature error")
 var ErrTime = errors.New("tsig time expired")
 
 type TsigHeader struct {
-	Name     *Name
+	Name     Name
 	Rrtype   RRType
 	Class    RRClass
 	Ttl      RRTTL
@@ -79,7 +79,7 @@ func (h *TsigHeader) String() string {
 }
 
 type TSIG struct {
-	Header     *TsigHeader
+	Header     TsigHeader
 	Algorithm  TSIGAlgorithm
 	TimeSigned uint64
 	Fudge      uint16
@@ -109,8 +109,8 @@ func NewTSIG(key, secret string, alg string) (*TSIG, error) {
 	}
 
 	return &TSIG{
-		Header: &TsigHeader{
-			Name:     name,
+		Header: TsigHeader{
+			Name:     *name,
 			Rrtype:   RR_TSIG,
 			Class:    CLASS_ANY,
 			Ttl:      0,
@@ -219,7 +219,7 @@ func TSIGFromRRset(rrset *RRset) (*TSIG, error) {
 	}
 
 	tsig := rrset.Rdatas[0].(*TSIG)
-	tsig.Header = &TsigHeader{
+	tsig.Header = TsigHeader{
 		Name:   rrset.Name,
 		Rrtype: rrset.Type,
 		Class:  rrset.Class,
@@ -288,7 +288,7 @@ func (t *TSIG) Compare(other Rdata) int {
 }
 
 type tsigWireFmt struct {
-	Name       *Name
+	Name       Name
 	Class      RRClass
 	Ttl        RRTTL
 	Algorithm  TSIGAlgorithm

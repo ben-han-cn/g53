@@ -59,7 +59,7 @@ func (h *Header) SetFlag(ff FlagField, set bool) {
 	}
 }
 
-func HeaderFromWire(h *Header, buf *util.InputBuffer) error {
+func (h *Header) FromWire(buf *util.InputBuffer) error {
 	if buf.Len() < 12 {
 		return errors.New("too short wire data for message header")
 	}
