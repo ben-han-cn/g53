@@ -284,12 +284,24 @@ func NameFromStringUnsafe(s string) *Name {
 }
 
 func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
+	n := &Name{
+		//5, 15 is the experienced value for label and name len
+		offsets: make([]byte, 0, 5),
+		raw:     make([]byte, 0, 15),
+	}
+	if err := n.FromWire(buf, downcase); err != nil {
+		return nil, err
+	} else {
+		return n, nil
+	}
+}
+
+func (name *Name) FromWire(buf *util.InputBuffer, downcase bool) error {
 	n := uint(0)
 	nused := uint(0)
 	done := false
-	//5, 15 is the experienced value for label and name len
-	offsets := make([]byte, 0, 5)
-	raw := make([]byte, 0, 15)
+	offsets := name.offsets[:0]
+	raw := name.raw[:0]
 	seenPointer := false
 	state := fwStart
 	cused := uint(0)
@@ -311,7 +323,7 @@ func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
 			if c <= MAX_LABEL_LEN {
 				offsets = append(offsets, byte(nused))
 				if nused+uint(c)+1 > MAX_WIRE {
-					return nil, errors.New("too long name")
+					return errors.New("too long name")
 				}
 
 				nused = nused + uint(c) + 1
@@ -326,7 +338,7 @@ func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
 				n = 1
 				state = fwNewCurrent
 			} else {
-				return nil, errors.New("unknown label character")
+				return errors.New("unknown label character")
 			}
 		case fwOrdinary:
 			if downcase {
@@ -345,7 +357,7 @@ func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
 				break
 			}
 			if newCurrent >= biggestPointer {
-				return nil, errors.New("bad compression pointer")
+				return errors.New("bad compression pointer")
 			}
 			biggestPointer = newCurrent
 			current = newCurrent
@@ -358,11 +370,15 @@ func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
 	}
 
 	if done == false {
-		return nil, errors.New("imcomplete wire format")
+		return errors.New("imcomplete wire format")
 	}
 
 	buf.SetPosition(posBegin + cused)
-	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+	name.raw = raw
+	name.offsets = offsets
+	name.length = uint(len(raw))
+	name.labelCount = uint(len(offsets))
+	return nil
 }
 
 func (name *Name) Length() uint {

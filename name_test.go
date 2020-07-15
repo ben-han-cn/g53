@@ -3,6 +3,8 @@ package g53
 import (
 	"bytes"
 	"testing"
+
+	"github.com/ben-han-cn/g53/util"
 )
 
 func TestDigitualNameParse(t *testing.T) {
@@ -170,4 +172,30 @@ func TestNameEquals(t *testing.T) {
 
 	knetmixcase.Downcase()
 	Assert(t, knetmixcase.CaseSensitiveEquals(knetdowncase), "")
+}
+
+func TestNameFromWire(t *testing.T) {
+	names := []*Name{
+		NameFromStringUnsafe("a"),
+		NameFromStringUnsafe("a.b"),
+		NameFromStringUnsafe("a.b.c"),
+		NameFromStringUnsafe("a.b.c.d"),
+	}
+
+	long := NameFromStringUnsafe("a.b.c.d.e.f")
+	var bss [][]byte
+	for _, n := range names {
+		buf := util.NewOutputBuffer(64)
+		n.ToWire(buf)
+		bss = append(bss, buf.Data())
+	}
+
+	allocs := testing.AllocsPerRun(10, func() {
+		for i, bs := range bss {
+			buf := util.NewInputBuffer(bs)
+			Assert(t, long.FromWire(buf, false) == nil, "")
+			Assert(t, long.Equals(names[i]), "")
+		}
+	})
+	Assert(t, allocs == 0, "")
 }
