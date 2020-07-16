@@ -174,6 +174,11 @@ const (
 	RR_TA RRType = 32768
 	/* RFC 4431 5074 DNSSEC Lookaside Validation */
 	RR_DLV RRType = 32769
+
+	//customed type
+	RR_WA     RRType = 1000
+	RR_WAAAA  RRType = 1001
+	RR_WCNAME RRType = 1002
 )
 
 var typeNameMap = map[RRType]string{
@@ -255,6 +260,10 @@ var typeNameMap = map[RRType]string{
 	RR_CAA:   "caa",
 	RR_TA:    "ta",
 	RR_DLV:   "dlv",
+
+	RR_WA:     "wa",
+	RR_WAAAA:  "waaaa",
+	RR_WCNAME: "wcname",
 }
 
 func TTLFromWire(buf *util.InputBuffer) (RRTTL, error) {

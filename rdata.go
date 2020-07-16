@@ -61,6 +61,12 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 		return NSEC3FromWire(buf, rdlen)
 	case RR_DS:
 		return DSFromWire(buf, rdlen)
+	case RR_WA:
+		return WAFromWire(buf, rdlen)
+	case RR_WAAAA:
+		return WAAAAFromWire(buf, rdlen)
+	case RR_WCNAME:
+		return WCNameFromWire(buf, rdlen)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
@@ -102,6 +108,12 @@ func RdataFromString(t RRType, s string) (Rdata, error) {
 		return NSEC3FromString(s)
 	case RR_DS:
 		return DSFromString(s)
+	case RR_WA:
+		return WAFromString(s)
+	case RR_WAAAA:
+		return WAAAAFromString(s)
+	case RR_WCNAME:
+		return WCNameFromString(s)
 	default:
 		return nil, fmt.Errorf("unimplement type: %v", t)
 	}
