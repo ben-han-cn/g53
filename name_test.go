@@ -174,7 +174,7 @@ func TestNameEquals(t *testing.T) {
 	Assert(t, knetmixcase.CaseSensitiveEquals(knetdowncase), "")
 }
 
-func TestNameFromWire(t *testing.T) {
+func TestNameAllocate(t *testing.T) {
 	names := []*Name{
 		NameFromStringUnsafe("a"),
 		NameFromStringUnsafe("a.b"),

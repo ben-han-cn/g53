@@ -125,16 +125,18 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 	switch st {
 	case AnswerSection:
 		count = m.Header.ANCount
+		s = m.Sections[0]
 	case AuthSection:
 		count = m.Header.NSCount
+		s = m.Sections[1]
 	case AdditionalSection:
 		count = m.Header.ARCount
+		s = m.Sections[2]
 	}
 
-	rrsets := make([]RRset, count)
 	var lastRRset *RRset
 	for i := uint16(0); i < count; i++ {
-		rrset := &rrsets[i]
+		var rrset RRset
 		if err := rrset.FromWire(buf); err != nil {
 			return err
 		}
@@ -144,11 +146,11 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		}
 
 		if lastRRset == nil {
-			lastRRset = rrset
+			lastRRset = &rrset
 			continue
 		}
 
-		if lastRRset.IsSameRRset(rrset) {
+		if lastRRset.IsSameRRset(&rrset) {
 			if rrset.Type == RR_OPT {
 				return fmt.Errorf("opt should has only one rdata")
 			}
@@ -158,7 +160,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
 		} else {
 			s = append(s, *lastRRset)
-			lastRRset = rrset
+			lastRRset = &rrset
 		}
 	}
 
@@ -274,8 +276,11 @@ func (m *Message) GetSection(st SectionType) Section {
 func (m *Message) Clear() {
 	m.Header.Clear()
 	m.Question = nil
+	//this will reuse the backend array, this may cause
+	//memory leak if there is a big section but after that
+	//the section has very few rrset
 	for i := 0; i < SectionCount; i++ {
-		m.Sections[i] = nil
+		m.Sections[i] = m.Sections[i][:0]
 	}
 	m.Edns = nil
 	m.Tsig = nil

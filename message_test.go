@@ -238,6 +238,31 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	})
 }
 
+func TestMessageAllocate(t *testing.T) {
+	resp := []byte{
+		4, 176, 133, 0, 0, 1, 0, 4, 0, 0, 0, 7, 3, 105, 115, 99, 3, 111, 114, 103, 0, 0, 2, 0, 1, 192, 12, 0, 2, 0, 1, 0, 0, 28, 32, 0, 25, 2, 110, 115, 3, 105, 115, 99, 11, 97, 102, 105, 108, 105, 97, 115, 45, 110, 115, 116, 4, 105, 110, 102, 111, 0, 192, 12, 0, 2, 0, 1, 0, 0, 28, 32, 0, 13, 3, 111, 114, 100, 6, 115, 110, 115, 45, 112, 98, 192, 12, 192, 12, 0, 2, 0, 1, 0, 0, 28, 32, 0, 6, 3, 97, 109, 115, 192, 78, 192, 12, 0, 2, 0, 1, 0, 0, 28, 32, 0, 7, 4, 115, 102, 98, 97, 192, 78, 192, 99, 0, 1, 0, 1, 0, 0, 28, 32, 0, 4, 199, 6, 1, 30, 192, 99, 0, 28, 0, 1, 0, 0, 28, 32, 0, 16, 32, 1, 5, 0, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 192, 74, 0, 1, 0, 1, 0, 0, 28, 32, 0, 4, 199, 6, 0, 30, 192, 74, 0, 28, 0, 1, 0, 0, 28, 32, 0, 16, 32, 1, 5, 0, 0, 113, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 192, 117, 0, 1, 0, 1, 0, 0, 28, 32, 0, 4, 149, 20, 64, 3, 192, 117, 0, 28, 0, 1, 0, 0, 28, 32, 0, 16, 32, 1, 4, 248, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 41, 16, 0, 0, 0, 0, 0, 0, 0,
+	}
+	msg_, _ := MessageFromWire(util.NewInputBuffer(resp))
+	str := msg_.String()
+
+	var msg Message
+	for i := 0; i < 20; i++ {
+		msg.Clear()
+		err := msg.FromWire(util.NewInputBuffer(resp))
+		Assert(t, err == nil, "")
+		Assert(t, msg.String() == str, "")
+	}
+
+	req := []byte{
+		4, 176, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 3, 105, 115, 99, 3, 111, 114, 103, 0, 0, 2, 0, 1, 0, 0, 41, 16, 0, 0, 0, 0, 0, 0, 0}
+	msg.FromWire(util.NewInputBuffer(req))
+	allocs := testing.AllocsPerRun(10, func() {
+		msg.Clear()
+		msg.FromWire(util.NewInputBuffer(req))
+	})
+	Assert(t, allocs == 4, "allocate %v", allocs)
+}
+
 func benchmarkParseMessage(b *testing.B, raw string) {
 	wire, _ := util.HexStrToBytes(raw)
 	buf := util.NewInputBuffer(wire)
