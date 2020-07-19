@@ -299,10 +299,10 @@ func fieldCompare(ct RDFCodingType, data1 interface{}, data2 interface{}) int {
 		d1, _ := data1.([]byte)
 		d2, _ := data2.([]byte)
 		return bytes.Compare(d1, d2)
-	}
 
-	panic("unknown rr type")
-	return 0
+	default:
+		panic("unknown rdata type")
+	}
 }
 
 func fieldFromString(dt RDFDisplayType, s string) (interface{}, error) {
