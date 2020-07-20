@@ -74,7 +74,7 @@ func WAAAAFromString(s string) (*WAAAA, error) {
 	f, err = fieldFromString(RDF_D_IP, fields[1])
 	if err == nil {
 		host, _ := f.(net.IP)
-		return &WAAAA{uint16(weight), host.To4()}, nil
+		return &WAAAA{uint16(weight), host.To16()}, nil
 	} else {
 		return nil, err
 	}
