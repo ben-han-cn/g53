@@ -470,15 +470,14 @@ func (rrset *RRset) FromWire(buf *util.InputBuffer) error {
 		return err
 	}
 
-	var rdatas []Rdata
-	if rdata != nil {
-		rdatas = []Rdata{rdata}
-	}
-
 	rrset.Type = typ
 	rrset.Class = cls
 	rrset.Ttl = ttl
-	rrset.Rdatas = rdatas
+	if rdata != nil {
+		rrset.Rdatas = rrset.Rdatas[:0]
+		rrset.Rdatas = append(rrset.Rdatas, rdata)
+	}
+
 	return nil
 }
 
