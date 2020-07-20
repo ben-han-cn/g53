@@ -25,14 +25,8 @@ func (aaaa *WAAAA) ToWire(buf *util.OutputBuffer) {
 	fieldToWire(RDF_C_IPV6, aaaa.Host, buf)
 }
 
-func (aaaa *WAAAA) Compare(other_ Rdata) int {
-	other := other_.(*WAAAA)
-	order := fieldCompare(RDF_C_UINT16, aaaa.Weight, other.Weight)
-	if order != 0 {
-		return order
-	}
-
-	return fieldCompare(RDF_C_IPV6, aaaa.Host, other.Host)
+func (aaaa *WAAAA) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_IPV6, aaaa.Host, other.(*WAAAA).Host)
 }
 
 func (aaaa *WAAAA) String() string {

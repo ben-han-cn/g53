@@ -30,14 +30,8 @@ func (c *WCName) String() string {
 		fieldToString(RDF_D_NAME, c.Name)}, " ")
 }
 
-func (c *WCName) Compare(other_ Rdata) int {
-	other := other_.(*WCName)
-	order := fieldCompare(RDF_C_UINT16, c.Weight, other.Weight)
-	if order != 0 {
-		return order
-	}
-
-	return fieldCompare(RDF_C_NAME, c.Name, other.Name)
+func (c *WCName) Compare(other Rdata) int {
+	return fieldCompare(RDF_C_NAME, c.Name, other.(*WCName).Name)
 }
 
 func WCNameFromWire(buf *util.InputBuffer, ll uint16) (*WCName, error) {
