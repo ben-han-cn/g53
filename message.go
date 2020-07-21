@@ -17,7 +17,7 @@ const (
 
 const SectionCount = 3
 
-type Section []RRset
+type Section []*RRset
 
 func (s Section) rrCount() int {
 	count := 0
@@ -53,6 +53,8 @@ func (s Section) String() string {
 }
 
 type Message struct {
+	noCopy
+
 	Header   Header
 	Question *Question
 	question Question
@@ -159,7 +161,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 			}
 			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
 		} else {
-			s = append(s, *lastRRset)
+			s = append(s, lastRRset)
 			lastRRset = &rrset
 		}
 	}
@@ -174,7 +176,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 				m.Tsig = tsig
 			}
 		} else {
-			s = append(s, *lastRRset)
+			s = append(s, lastRRset)
 		}
 	}
 
@@ -287,7 +289,7 @@ func (m *Message) Clear() {
 }
 
 func (m *Message) AddRRset(st SectionType, rrset *RRset) {
-	m.Sections[st] = append(m.Sections[st], *rrset)
+	m.Sections[st] = append(m.Sections[st], rrset)
 }
 
 func (m *Message) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) {

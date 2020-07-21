@@ -45,7 +45,7 @@ func matchMessageRaw(t *testing.T, rawData string, m *Message) {
 func matchSection(t *testing.T, ns Section, s Section) {
 	Equal(t, len(ns), len(s))
 	for i := 0; i < len(ns); i++ {
-		matchRRset(t, &ns[i], &s[i])
+		matchRRset(t, ns[i], s[i])
 	}
 }
 
@@ -55,7 +55,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	ra2, _ := AFromString("192.0.2.1")
 
 	var answer Section
-	answer = append(answer, RRset{
+	answer = append(answer, &RRset{
 		Name:   *qn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -66,7 +66,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	var authority Section
 	ns, _ := NameFromString("example.com.")
 	ra3, _ := NSFromString("ns1.example.com.")
-	authority = append(authority, RRset{
+	authority = append(authority, &RRset{
 		Name:   *ns,
 		Type:   RR_NS,
 		Class:  CLASS_IN,
@@ -77,7 +77,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	var additional Section
 	glue, _ := NameFromString("ns1.example.com.")
 	ra4, _ := AFromString("2.2.2.2")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *glue,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -140,7 +140,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	qn, _ := NameFromString("www.knet.cn.")
 	ra1, _ := AFromString("202.173.11.10")
 	var answer Section
-	answer = append(answer, RRset{
+	answer = append(answer, &RRset{
 		Name:   *qn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -154,7 +154,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	ns2, _ := NSFromString("lns2.zdnscloud.biz.")
 	ns3, _ := NSFromString("gns2.zdnscloud.net.cn.")
 	ns4, _ := NSFromString("lns1.zdnscloud.info.")
-	auth = append(auth, RRset{
+	auth = append(auth, &RRset{
 		Name:   *sn,
 		Type:   RR_NS,
 		Class:  CLASS_IN,
@@ -165,7 +165,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	var additional Section
 	sn, _ = NameFromString("gns1.zdnscloud.net.")
 	ra1, _ = AFromString("1.8.152.1")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -175,7 +175,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 
 	sn, _ = NameFromString("gns2.zdnscloud.net.cn.")
 	ra1, _ = AFromString("1.8.153.1")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -188,7 +188,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	aa2, _ := AFromString("119.167.233.233")
 	aa3, _ := AFromString("182.131.23.11")
 	aa4, _ := AFromString("1.8.101.253")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -197,7 +197,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	})
 
 	aaaaa1, _ := AAAAFromString("2401:8d00:4::1")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *sn,
 		Type:   RR_AAAA,
 		Class:  CLASS_IN,
@@ -210,7 +210,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	aa2, _ = AFromString("182.131.23.12")
 	aa3, _ = AFromString("1.8.101.252")
 	aa4, _ = AFromString("111.1.33.138")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *sn,
 		Type:   RR_A,
 		Class:  CLASS_IN,
@@ -219,7 +219,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	})
 
 	aaaaa1, _ = AAAAFromString("2401:8d00:6::1")
-	additional = append(additional, RRset{
+	additional = append(additional, &RRset{
 		Name:   *sn,
 		Type:   RR_AAAA,
 		Class:  CLASS_IN,

@@ -7,6 +7,10 @@ import (
 	"github.com/ben-han-cn/g53/util"
 )
 
+//name is a read only struct, any modification will generate new name
+//therefore name could be copyed which share the same raw bytes but
+//they won't affect each other thanks to the immutability
+
 type NameRelation int
 
 const (
@@ -87,10 +91,10 @@ type NameComparisonResult struct {
 }
 
 //for www.knet.cn
-//{raw:			[3 119 119 119 4 107 110 101 116 2 99 110 0
-// offsets: 	[0 4 9 12];label count positions
+// raw:			[3 119 119 119 4 107 110 101 116 2 99 110 0]
+// offsets: 	[0 4 9 12]
 // length: 		13
-// labelCount: 	4}
+// labelCount: 	4
 type Name struct {
 	raw        []byte
 	offsets    []byte
@@ -261,7 +265,12 @@ func NewName(name string, downcase bool) (*Name, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+		return &Name{
+			raw:        raw,
+			offsets:    offsets,
+			length:     uint(len(raw)),
+			labelCount: uint(len(offsets)),
+		}, nil
 	}
 }
 
@@ -589,7 +598,13 @@ func (name *Name) Concat(suffixes ...*Name) (*Name, error) {
 		}
 		copyedLen += suffix.labelCount - 1
 	}
-	return &Name{raw, offsets, uint(len(raw)), uint(len(offsets))}, nil
+
+	return &Name{
+		raw:        raw,
+		offsets:    offsets,
+		length:     uint(len(raw)),
+		labelCount: uint(len(offsets)),
+	}, nil
 }
 
 //"a.b.c" Subtrace "b.c" == "a"
@@ -615,7 +630,13 @@ func (name *Name) Reverse() *Name {
 	}
 	raw = append(raw, 0)
 	offsets = append(offsets, labelLen)
-	return &Name{raw, offsets, name.length, name.labelCount}
+
+	return &Name{
+		raw:        raw,
+		offsets:    offsets,
+		length:     name.length,
+		labelCount: name.labelCount,
+	}
 }
 
 func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
@@ -634,7 +655,12 @@ func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
 			for i := uint(0); i < labelCount; i++ {
 				offsets[i] -= firstOffset
 			}
-			return &Name{raw, offsets, uint(len(raw)), labelCount}, nil
+			return &Name{
+				raw:        raw,
+				offsets:    offsets,
+				length:     uint(len(raw)),
+				labelCount: labelCount,
+			}, nil
 		}
 	} else {
 		offsets := make([]byte, labelCount+1)
@@ -646,7 +672,12 @@ func (name *Name) Split(startLabel uint, labelCount uint) (*Name, error) {
 			offsets[i] -= firstOffset
 		}
 		raw[offsets[labelCount]] = 0
-		return &Name{raw, offsets, uint(len(raw)), labelCount + 1}, nil
+		return &Name{
+			raw:        raw,
+			offsets:    offsets,
+			length:     uint(len(raw)),
+			labelCount: labelCount + 1,
+		}, nil
 	}
 }
 
@@ -691,7 +722,12 @@ func (name *Name) StripLeft(c uint) (*Name, error) {
 		offsets[i] -= startPos
 	}
 
-	return &Name{name.raw[startPos:], offsets, name.length - uint(startPos), uint(len(offsets))}, nil
+	return &Name{
+		raw:        name.raw[startPos:],
+		offsets:    offsets,
+		length:     name.length - uint(startPos),
+		labelCount: uint(len(offsets)),
+	}, nil
 }
 
 func (name *Name) StripRight(c uint) (*Name, error) {
@@ -709,7 +745,12 @@ func (name *Name) StripRight(c uint) (*Name, error) {
 	copy(raw, name.raw[0:endPos])
 	raw[endPos] = 0
 	offsets := name.offsets[0 : labelIndex+1]
-	return &Name{raw, offsets, uint(endPos + 1), name.labelCount - c}, nil
+	return &Name{
+		raw:        raw,
+		offsets:    offsets,
+		length:     uint(endPos + 1),
+		labelCount: name.labelCount - c,
+	}, nil
 }
 
 func (name *Name) Hash(caseSensitive bool) uint32 {

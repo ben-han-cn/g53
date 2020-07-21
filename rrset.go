@@ -385,6 +385,8 @@ func (t RRType) String() string {
 }
 
 type RRset struct {
+	noCopy
+
 	Name   Name
 	Type   RRType
 	Class  RRClass
