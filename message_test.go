@@ -267,6 +267,7 @@ func benchmarkParseMessage(b *testing.B, raw string) {
 	wire, _ := util.HexStrToBytes(raw)
 	buf := util.NewInputBuffer(wire)
 	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		MessageFromWire(buf)
 		buf.SetPosition(0)
