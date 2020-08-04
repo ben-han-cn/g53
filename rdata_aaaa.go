@@ -27,15 +27,15 @@ func (aaaa *AAAA) String() string {
 	return fieldToString(RDF_D_IP, aaaa.Host)
 }
 
-func AAAAFromWire(buf *util.InputBuffer, ll uint16) (*AAAA, error) {
-	f, ll, err := fieldFromWire(RDF_C_IPV6, buf, ll)
+func (aaaa *AAAA) FromWire(buf *util.InputBuffer, ll uint16) error {
+	host, ll, err := ipv6FieldFromWire(aaaa.Host, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in rdata part")
 	} else {
-		host, _ := f.(net.IP)
-		return &AAAA{host.To16()}, nil
+		aaaa.Host = host
+		return nil
 	}
 }
 

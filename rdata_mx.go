@@ -40,24 +40,22 @@ func (mx *MX) String() string {
 		fieldToString(RDF_D_NAME, mx.Exchange)}, " ")
 }
 
-func MXFromWire(buf *util.InputBuffer, ll uint16) (*MX, error) {
+func (mx *MX) FromWire(buf *util.InputBuffer, ll uint16) error {
 	f, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	preference, _ := f.(uint16)
+	mx.Preference, _ = f.(uint16)
 
-	f, ll, err = fieldFromWire(RDF_C_NAME, buf, ll)
+	n, ll, err := nameFieldFromWire(mx.Exchange, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else if ll != 0 {
+		return errors.New("extra data in mx rdata part")
+	} else {
+		mx.Exchange = n
+		return nil
 	}
-	exchange, _ := f.(*Name)
-
-	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
-	}
-
-	return &MX{preference, exchange}, nil
 }
 
 var mxRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s*$`)

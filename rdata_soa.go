@@ -62,54 +62,55 @@ func (soa *SOA) String() string {
 	return buf.String()
 }
 
-func SOAFromWire(buf *util.InputBuffer, ll uint16) (*SOA, error) {
-	name, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+func (soa *SOA) FromWire(buf *util.InputBuffer, ll uint16) error {
+	n, ll, err := nameFieldFromWire(soa.MName, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else {
+		soa.MName = n
 	}
-	mname, _ := name.(*Name)
 
-	name, ll, err = fieldFromWire(RDF_C_NAME, buf, ll)
+	n, ll, err = nameFieldFromWire(soa.RName, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else {
+		soa.RName = n
 	}
-	rname, _ := name.(*Name)
 
 	i, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	serial, _ := i.(uint32)
+	soa.Serial, _ = i.(uint32)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	refresh, _ := i.(uint32)
+	soa.Refresh, _ = i.(uint32)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	retry, _ := i.(uint32)
+	soa.Retry, _ = i.(uint32)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	expire, _ := i.(uint32)
+	soa.Expire, _ = i.(uint32)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	minimum, _ := i.(uint32)
+	soa.Minimum, _ = i.(uint32)
 
 	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in rdata part")
 	}
-
-	return &SOA{mname, rname, serial, refresh, retry, expire, minimum}, nil
+	return nil
 }
 
 var soaRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)

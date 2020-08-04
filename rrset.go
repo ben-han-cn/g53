@@ -448,6 +448,10 @@ func RRsetFromWire(buf *util.InputBuffer) (*RRset, error) {
 }
 
 func (rrset *RRset) FromWire(buf *util.InputBuffer) error {
+	if len(rrset.Rdatas) != 0 {
+		panic(fmt.Sprintf("invalid rrset %s", rrset.String()))
+	}
+
 	if err := rrset.Name.FromWire(buf, false); err != nil {
 		return err
 	}
@@ -476,7 +480,6 @@ func (rrset *RRset) FromWire(buf *util.InputBuffer) error {
 	rrset.Class = cls
 	rrset.Ttl = ttl
 	if rdata != nil {
-		rrset.Rdatas = rrset.Rdatas[:0]
 		rrset.Rdatas = append(rrset.Rdatas, rdata)
 	}
 

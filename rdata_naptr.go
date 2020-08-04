@@ -83,51 +83,49 @@ func (naptr *NAPTR) String() string {
 	return buf.String()
 }
 
-func NAPTRFromWire(buf *util.InputBuffer, ll uint16) (*NAPTR, error) {
+func (n *NAPTR) FromWire(buf *util.InputBuffer, ll uint16) error {
 	o, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	order, _ := o.(uint16)
+	n.Order, _ = o.(uint16)
 
 	p, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	preference, _ := p.(uint16)
+	n.Preference, _ = p.(uint16)
 
 	f, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	f_, _ := f.([]uint8)
-	flags := string(f_)
+	n.Flags = string(f_)
 
 	s, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	s_, _ := s.([]uint8)
-	service := string(s_)
+	n.Services = string(s_)
 
 	r, ll, err := fieldFromWire(RDF_C_BYTE_BINARY, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	r_, _ := r.([]uint8)
-	regex := string(r_)
+	n.Regexp = string(r_)
 
-	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+	name, ll, err := nameFieldFromWire(n.Replacement, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else if ll != 0 {
+		return errors.New("extra data in naptr rdata part")
+	} else {
+		n.Replacement = name
+		return nil
 	}
-	replacement, _ := n.(*Name)
-
-	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
-	}
-
-	return &NAPTR{order, preference, flags, service, regex, replacement}, nil
 }
 
 var naptrRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)

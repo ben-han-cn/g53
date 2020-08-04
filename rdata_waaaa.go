@@ -35,21 +35,22 @@ func (aaaa *WAAAA) String() string {
 		fieldToString(RDF_D_IP, aaaa.Host)}, " ")
 }
 
-func WAAAAFromWire(buf *util.InputBuffer, ll uint16) (*WAAAA, error) {
+func (aaaa *WAAAA) FromWire(buf *util.InputBuffer, ll uint16) error {
 	f, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	weight, _ := f.(uint16)
 
 	f, ll, err = fieldFromWire(RDF_C_IPV6, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in rdata part")
 	} else {
-		host, _ := f.(net.IP)
-		return &WAAAA{weight, host.To16()}, nil
+		aaaa.Weight = weight
+		aaaa.Host, _ = f.(net.IP)
+		return nil
 	}
 }
 

@@ -1,8 +1,11 @@
 package g53
 
 import (
+	"fmt"
+	"io/ioutil"
 	"testing"
 
+	ut "github.com/ben-han-cn/cement/unittest"
 	"github.com/ben-han-cn/g53/util"
 )
 
@@ -247,20 +250,26 @@ func TestMessageAllocate(t *testing.T) {
 
 	var msg Message
 	for i := 0; i < 20; i++ {
-		msg.Clear()
 		err := msg.FromWire(util.NewInputBuffer(resp))
 		Assert(t, err == nil, "")
 		Assert(t, msg.String() == str, "")
+		msg.Clear()
 	}
+
+	allocs := testing.AllocsPerRun(10, func() {
+		msg.FromWire(util.NewInputBuffer(resp))
+		msg.Clear()
+	})
+	Assert(t, allocs == 1, "allocate %v", allocs)
 
 	req := []byte{
 		4, 176, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 3, 105, 115, 99, 3, 111, 114, 103, 0, 0, 2, 0, 1, 0, 0, 41, 16, 0, 0, 0, 0, 0, 0, 0}
 	msg.FromWire(util.NewInputBuffer(req))
-	allocs := testing.AllocsPerRun(10, func() {
-		msg.Clear()
+	allocs = testing.AllocsPerRun(10, func() {
 		msg.FromWire(util.NewInputBuffer(req))
+		msg.Clear()
 	})
-	Assert(t, allocs == 3, "allocate %v", allocs)
+	Assert(t, allocs == 1, "allocate %v", allocs)
 }
 
 func benchmarkParseMessage(b *testing.B, raw string) {
@@ -280,4 +289,19 @@ func BenchmarkParseKnetMessage(b *testing.B) {
 
 func BenchmarkParseTestExample(b *testing.B) {
 	benchmarkParseMessage(b, "04b0850000010002000100020474657374076578616d706c6503636f6d0000010001c00c0001000100000e100004c0000202c00c0001000100000e100004c0000201c0110002000100000e100006036e7331c011c04e0001000100000e100004020202020000291000000000000000")
+}
+
+func TestFuzzCrash(t *testing.T) {
+	raw, err := ioutil.ReadFile("crashers/4c4205b44d5678da9c3358344d5155692c521e6b")
+	ut.Assert(t, err == nil, "")
+	fmt.Printf("---> len of raw is %v\n", len(raw))
+	for i := 0; i < 100; i++ {
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			var msg Message
+			err = msg.FromWire(util.NewInputBuffer(raw))
+			ut.Assert(t, err != nil, "")
+			msg.Clear()
+		})
+	}
 }

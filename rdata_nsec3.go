@@ -144,70 +144,69 @@ func encodeNSEC3Bytes(nsec3Types []RRType) []byte {
 	return types[:offset+int(lastlength)+2]
 }
 
-func NSEC3FromWire(buf *util.InputBuffer, ll uint16) (*NSEC3, error) {
+func (n *NSEC3) FromWire(buf *util.InputBuffer, ll uint16) error {
 	algorithm, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	flags, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	iterations, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	saltLen, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	salt, _, err := fieldFromWire(RDF_C_BINARY, buf, uint16(saltLen.(uint8)))
 	if err != nil {
-		return nil, err
+		return err
 	} else {
 		ll -= uint16(saltLen.(uint8))
 	}
 
 	hashLen, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	nextHash, _, err := fieldFromWire(RDF_C_BINARY, buf, uint16(hashLen.(uint8)))
 	if err != nil {
-		return nil, err
+		return err
 	} else {
 		ll -= uint16(hashLen.(uint8))
 	}
 
 	nsec3Types, ll, err := fieldFromWire(RDF_C_BINARY, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if ll != 0 {
-		return nil, fmt.Errorf("extra data in rdata part")
+		return fmt.Errorf("extra data in rdata part")
 	}
 
 	types, err := decodeNSEC3Types(nsec3Types.([]byte))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &NSEC3{
-		Algorithm:  algorithm.(uint8),
-		Flags:      flags.(uint8),
-		Iterations: iterations.(uint16),
-		SaltLength: saltLen.(uint8),
-		Salt:       hex.EncodeToString(salt.([]uint8)),
-		HashLength: hashLen.(uint8),
-		NextHash:   base32.HexEncoding.EncodeToString(nextHash.([]uint8)),
-		Types:      types,
-	}, nil
+	n.Algorithm = algorithm.(uint8)
+	n.Flags = flags.(uint8)
+	n.Iterations = iterations.(uint16)
+	n.SaltLength = saltLen.(uint8)
+	n.Salt = hex.EncodeToString(salt.([]uint8))
+	n.HashLength = hashLen.(uint8)
+	n.NextHash = base32.HexEncoding.EncodeToString(nextHash.([]uint8))
+	n.Types = types
+	return nil
 }
 
 func decodeNSEC3Types(msg []byte) ([]RRType, error) {

@@ -26,15 +26,15 @@ func (ns *NS) String() string {
 	return fieldToString(RDF_D_NAME, ns.Name)
 }
 
-func NSFromWire(buf *util.InputBuffer, ll uint16) (*NS, error) {
-	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+func (ns *NS) FromWire(buf *util.InputBuffer, ll uint16) error {
+	n, ll, err := nameFieldFromWire(ns.Name, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in cname rdata part")
 	} else {
-		name, _ := n.(*Name)
-		return &NS{name}, nil
+		ns.Name = n
+		return nil
 	}
 }
 

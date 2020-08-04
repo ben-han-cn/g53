@@ -40,21 +40,23 @@ func (rp *RP) String() string {
 	return buf.String()
 }
 
-func RPFromWire(buf *util.InputBuffer, ll uint16) (*RP, error) {
-	mbox, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+func (rp *RP) FromWire(buf *util.InputBuffer, ll uint16) error {
+	n, ll, err := nameFieldFromWire(rp.Mbox, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else {
+		rp.Mbox = n
 	}
 
-	txt, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+	n, ll, err = nameFieldFromWire(rp.Txt, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else if ll != 0 {
+		return errors.New("extra data in cname rdata part")
+	} else {
+		rp.Txt = n
+		return nil
 	}
-
-	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
-	}
-	return &RP{mbox.(*Name), txt.(*Name)}, nil
 }
 
 var rpRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s*$`)

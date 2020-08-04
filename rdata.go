@@ -8,12 +8,13 @@ import (
 
 type Rdata interface {
 	Rend(r *MsgRender)
-	ToWire(buf *util.OutputBuffer)
+	FromWire(*util.InputBuffer, uint16) error
+	ToWire(*util.OutputBuffer)
 	Compare(Rdata) int
 	String() string
 }
 
-func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
+func RdataFromWire(typ RRType, buf *util.InputBuffer) (Rdata, error) {
 	rdlen, err := buf.ReadUint16()
 	if err != nil {
 		return nil, err
@@ -24,51 +25,14 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 		return nil, nil
 	}
 
-	switch t {
-	case RR_A:
-		return AFromWire(buf, rdlen)
-	case RR_AAAA:
-		return AAAAFromWire(buf, rdlen)
-	case RR_CNAME:
-		return CNameFromWire(buf, rdlen)
-	case RR_SOA:
-		return SOAFromWire(buf, rdlen)
-	case RR_NS:
-		return NSFromWire(buf, rdlen)
-	case RR_OPT:
-		return OPTFromWire(buf, rdlen)
-	case RR_PTR:
-		return PTRFromWire(buf, rdlen)
-	case RR_SRV:
-		return SRVFromWire(buf, rdlen)
-	case RR_NAPTR:
-		return NAPTRFromWire(buf, rdlen)
-	case RR_DNAME:
-		return DNameFromWire(buf, rdlen)
-	case RR_RRSIG:
-		return RRSigFromWire(buf, rdlen)
-	case RR_MX:
-		return MXFromWire(buf, rdlen)
-	case RR_TXT:
-		return TxtFromWire(buf, rdlen)
-	case RR_RP:
-		return RPFromWire(buf, rdlen)
-	case RR_SPF:
-		return SPFFromWire(buf, rdlen)
-	case RR_TSIG:
-		return TSIGFromWire(buf, rdlen)
-	case RR_NSEC3:
-		return NSEC3FromWire(buf, rdlen)
-	case RR_DS:
-		return DSFromWire(buf, rdlen)
-	case RR_WA:
-		return WAFromWire(buf, rdlen)
-	case RR_WAAAA:
-		return WAAAAFromWire(buf, rdlen)
-	case RR_WCNAME:
-		return WCNameFromWire(buf, rdlen)
-	default:
-		return nil, fmt.Errorf("unimplement type: %v", t)
+	rdata := acquireRdata(typ)
+	if rdata == nil {
+		return nil, fmt.Errorf("unknown rr type %s", typ.String())
+	} else if err := rdata.FromWire(buf, rdlen); err != nil {
+		releaseRdata(typ, rdata)
+		return nil, err
+	} else {
+		return rdata, nil
 	}
 }
 

@@ -26,15 +26,16 @@ func (spf *SPF) String() string {
 	return fieldToString(RDF_D_TXT, spf.Data)
 }
 
-func SPFFromWire(buf *util.InputBuffer, ll uint16) (*SPF, error) {
+func (spf *SPF) FromWire(buf *util.InputBuffer, ll uint16) error {
 	f, ll, err := fieldFromWire(RDF_C_TXT, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part when parse spf")
+		return errors.New("extra data in rdata part when parse spf")
 	} else {
 		data, _ := f.([]string)
-		return &SPF{data}, nil
+		spf.Data = data
+		return nil
 	}
 }
 

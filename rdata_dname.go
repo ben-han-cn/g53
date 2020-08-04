@@ -2,6 +2,7 @@ package g53
 
 import (
 	"errors"
+
 	"github.com/ben-han-cn/g53/util"
 )
 
@@ -25,16 +26,24 @@ func (c *DName) String() string {
 	return fieldToString(RDF_D_NAME, c.Target)
 }
 
-func DNameFromWire(buffer *util.InputBuffer, ll uint16) (*DName, error) {
-	n, ll, err := fieldFromWire(RDF_C_NAME, buffer, ll)
-
-	if err != nil {
+func DNameFromWire(buf *util.InputBuffer, ll uint16) (*DName, error) {
+	var d DName
+	if err := d.FromWire(buf, ll); err != nil {
 		return nil, err
-	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
 	} else {
-		name, _ := n.(*Name)
-		return &DName{name}, nil
+		return &d, nil
+	}
+}
+
+func (d *DName) FromWire(buf *util.InputBuffer, ll uint16) error {
+	n, ll, err := nameFieldFromWire(d.Target, buf, ll)
+	if err != nil {
+		return err
+	} else if ll != 0 {
+		return errors.New("extra data in cname rdata part")
+	} else {
+		d.Target = n
+		return nil
 	}
 }
 

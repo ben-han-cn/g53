@@ -38,6 +38,13 @@ func (s Section) Rend(r *MsgRender) {
 	}
 }
 
+func (s Section) Relase() Section {
+	for _, rrset := range s {
+		releaseRRset(rrset)
+	}
+	return s[:0]
+}
+
 func (s Section) ToWire(buf *util.OutputBuffer) {
 	for i := 0; i < len(s); i++ {
 		s[i].ToWire(buf)
@@ -123,7 +130,7 @@ func (m *Message) FromWire(buf *util.InputBuffer) error {
 	return nil
 }
 
-func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
+func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) (err error) {
 	var s Section
 	var count uint16
 	switch st {
@@ -138,53 +145,82 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		s = m.Sections[2]
 	}
 
-	var lastRRset *RRset
+	var cur, last *RRset
 	for i := uint16(0); i < count; i++ {
-		var rrset RRset
-		if err := rrset.FromWire(buf); err != nil {
-			return err
+		cur = acquireRRset()
+		if err = cur.FromWire(buf); err != nil {
+			goto hasError
 		}
 
-		if rrset.Type == RR_OPT && st != AdditionalSection {
-			return fmt.Errorf("opt rr exist in non-addtional section")
+		if cur.Type == RR_OPT && st != AdditionalSection {
+			err = fmt.Errorf("opt rr exist in non-addtional section")
+			goto hasError
 		}
 
-		if lastRRset == nil {
-			lastRRset = &rrset
+		if last == nil {
+			last = cur
 			continue
 		}
 
-		if lastRRset.IsSameRRset(&rrset) {
-			if rrset.Type == RR_OPT {
-				return fmt.Errorf("opt should has only one rdata")
+		if last.IsSameRRset(cur) {
+			if cur.Type == RR_OPT {
+				err = fmt.Errorf("opt should has only one rdata")
+				goto hasError
 			}
-			if len(rrset.Rdatas) == 0 {
-				return fmt.Errorf("duplicate rrset with empty rdata")
+
+			if len(cur.Rdatas) == 0 {
+				err = fmt.Errorf("duplicate rrset with empty rdata")
+				goto hasError
 			}
-			lastRRset.Rdatas = append(lastRRset.Rdatas, rrset.Rdatas[0])
+
+			last.Rdatas = append(last.Rdatas, cur.Rdatas[0])
+			cur.Rdatas = cur.Rdatas[:0]
+			releaseRRset(cur)
 		} else {
-			s = append(s, lastRRset)
-			lastRRset = &rrset
+			s = append(s, last)
+			last = cur
 		}
+		cur = nil
 	}
 
-	if lastRRset != nil {
-		if st == AdditionalSection && lastRRset.Type == RR_OPT {
-			m.edns.FromRRset(lastRRset)
-			m.Edns = &m.edns
-		} else if st == AdditionalSection && lastRRset.Type == RR_TSIG {
-			if tsig, err := TSIGFromRRset(lastRRset); err != nil {
-				return err
+	if last != nil {
+		s = append(s, last)
+		/*
+			if st == AdditionalSection {
+				if last.Type == RR_OPT {
+					m.edns.FromRRset(last)
+					m.Edns = &m.edns
+
+				} else if last.Type == RR_TSIG {
+					var tsig *TSIG
+					tsig, err = TSIGFromRRset(last)
+					if err != nil {
+						goto hasError
+					}
+					m.Tsig = tsig
+				}
+				releaseRRset(last)
 			} else {
-				m.Tsig = tsig
+				s = append(s, last)
 			}
-		} else {
-			s = append(s, lastRRset)
-		}
+		*/
 	}
 
 	m.Sections[st] = s
-	return nil
+	return
+
+hasError:
+	if last != nil {
+		releaseRRset(last)
+	}
+	if cur != nil {
+		releaseRRset(cur)
+	}
+	for i, rrset := range s {
+		releaseRRset(rrset)
+		s[i] = nil
+	}
+	return
 }
 
 func (m *Message) Rend(r *MsgRender) {
@@ -282,11 +318,8 @@ func (m *Message) Clear() {
 	m.Header.Clear()
 	m.Question = nil
 	m.Edns = nil
-	//this will reuse the backend array, this may cause
-	//memory leak if there is a big section but after that
-	//the section has very few rrset
 	for i := 0; i < SectionCount; i++ {
-		m.Sections[i] = m.Sections[i][:0]
+		m.Sections[i] = m.Sections[i].Relase()
 	}
 	m.Edns = nil
 	m.Tsig = nil

@@ -6,7 +6,9 @@ import (
 
 func Fuzz(data []byte) int {
 	buf := util.NewInputBuffer(data)
-	_, err := MessageFromWire(buf)
+	var msg Message
+	err := msg.FromWire(buf)
+	msg.Clear()
 	if err != nil {
 		return 0
 	} else {

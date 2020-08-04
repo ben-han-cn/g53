@@ -26,16 +26,17 @@ func (opt *OPT) String() string {
 	return fieldToString(RDF_D_HEX, opt.Data)
 }
 
-func OPTFromWire(buf *util.InputBuffer, ll uint16) (*OPT, error) {
+func (opt *OPT) FromWire(buf *util.InputBuffer, ll uint16) error {
 	f, ll, err := fieldFromWire(RDF_C_BINARY, buf, ll)
 
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, fmt.Errorf("extra data %d in opt rdata part", ll)
+		return fmt.Errorf("extra data %d in opt rdata part", ll)
 	} else {
 		d, _ := f.([]uint8)
-		return &OPT{d}, nil
+		opt.Data = d
+		return nil
 	}
 }
 

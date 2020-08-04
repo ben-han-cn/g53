@@ -2,6 +2,7 @@ package g53
 
 import (
 	"errors"
+
 	"github.com/ben-han-cn/g53/util"
 )
 
@@ -25,16 +26,15 @@ func (p *PTR) String() string {
 	return fieldToString(RDF_D_NAME, p.Name)
 }
 
-func PTRFromWire(buf *util.InputBuffer, ll uint16) (*PTR, error) {
-	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
-
+func (p *PTR) FromWire(buf *util.InputBuffer, ll uint16) error {
+	n, ll, err := nameFieldFromWire(p.Name, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in cname rdata part")
 	} else {
-		name, _ := n.(*Name)
-		return &PTR{name}, nil
+		p.Name = n
+		return nil
 	}
 }
 

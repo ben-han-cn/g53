@@ -2,6 +2,7 @@ package g53
 
 import (
 	"errors"
+
 	"github.com/ben-han-cn/g53/util"
 )
 
@@ -25,16 +26,15 @@ func (c *CName) Compare(other Rdata) int {
 	return 0 //there should one rr in cname rrset
 }
 
-func CNameFromWire(buf *util.InputBuffer, ll uint16) (*CName, error) {
-	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
-
+func (c *CName) FromWire(buf *util.InputBuffer, ll uint16) error {
+	n, ll, err := nameFieldFromWire(c.Name, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in cname rdata part")
 	} else {
-		name, _ := n.(*Name)
-		return &CName{name}, nil
+		c.Name = n
+		return nil
 	}
 }
 

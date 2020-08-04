@@ -306,11 +306,12 @@ func NameFromWire(buf *util.InputBuffer, downcase bool) (*Name, error) {
 }
 
 func (name *Name) FromWire(buf *util.InputBuffer, downcase bool) error {
+	name.clear()
 	n := uint(0)
 	nused := uint(0)
 	done := false
-	offsets := name.offsets[:0]
-	raw := name.raw[:0]
+	offsets := name.offsets
+	raw := name.raw
 	seenPointer := false
 	state := fwStart
 	cused := uint(0)
@@ -388,6 +389,13 @@ func (name *Name) FromWire(buf *util.InputBuffer, downcase bool) error {
 	name.length = uint(len(raw))
 	name.labelCount = uint(len(offsets))
 	return nil
+}
+
+func (name *Name) clear() {
+	name.raw = name.raw[:0]
+	name.offsets = name.offsets[:0]
+	name.length = 0
+	name.labelCount = 0
 }
 
 func (name *Name) Length() uint {

@@ -34,21 +34,22 @@ func (c *WCName) Compare(other Rdata) int {
 	return fieldCompare(RDF_C_NAME, c.Name, other.(*WCName).Name)
 }
 
-func WCNameFromWire(buf *util.InputBuffer, ll uint16) (*WCName, error) {
+func (c *WCName) FromWire(buf *util.InputBuffer, ll uint16) error {
 	f, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	weight, _ := f.(uint16)
 
-	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+	n, ll, err := nameFieldFromWire(c.Name, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in cname rdata part")
 	} else {
-		name, _ := n.(*Name)
-		return &WCName{weight, name}, nil
+		c.Weight = weight
+		c.Name = n
+		return nil
 	}
 }
 

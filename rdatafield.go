@@ -50,6 +50,63 @@ const (
 	RDF_D_STR
 )
 
+func nameFieldFromWire(name *Name, buf *util.InputBuffer, ll uint16) (*Name, uint16, error) {
+	var ret *Name
+	if name != nil {
+		ret = name
+	} else {
+		ret = &Name{}
+	}
+
+	pos := buf.Position()
+	err := ret.FromWire(buf, true)
+	if err != nil {
+		return nil, ll, err
+	} else {
+		nameLen := uint16(buf.Position() - pos)
+		if nameLen > ll {
+			return nil, ll, ErrDataIsTooShort
+		} else {
+			return ret, ll - nameLen, nil
+		}
+	}
+}
+
+func ipv4FieldFromWire(ip net.IP, buf *util.InputBuffer, ll uint16) (net.IP, uint16, error) {
+	d, ll, err := bytesFieldFromWire([]byte(ip), 4, buf, ll)
+	if err == nil {
+		return net.IP(d), ll, nil
+	} else {
+		return ip, ll, err
+	}
+}
+
+func ipv6FieldFromWire(ip net.IP, buf *util.InputBuffer, ll uint16) (net.IP, uint16, error) {
+	d, ll, err := bytesFieldFromWire([]byte(ip), 16, buf, ll)
+	if err == nil {
+		return net.IP(d), ll, nil
+	} else {
+		return ip, ll, err
+	}
+}
+
+func bytesFieldFromWire(data []byte, dataLen uint16, buf *util.InputBuffer, ll uint16) ([]byte, uint16, error) {
+	if ll < dataLen {
+		return data, ll, ErrDataIsTooShort
+	}
+
+	d, err := buf.ReadBytes(uint(dataLen))
+	if err != nil {
+		return data, ll, err
+	}
+
+	if len(data) == 0 {
+		data = make([]byte, dataLen)
+	}
+	copy(data, d)
+	return data, ll - dataLen, nil
+}
+
 func fieldFromWire(ct RDFCodingType, buf *util.InputBuffer, ll uint16) (interface{}, uint16, error) {
 	switch ct {
 	case RDF_C_NAME, RDF_C_NAME_UNCOMPRESS:

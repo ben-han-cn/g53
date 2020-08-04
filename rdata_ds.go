@@ -64,37 +64,36 @@ func (ds *DS) ToWire(buf *util.OutputBuffer) {
 	fieldToWire(RDF_C_BINARY, encodeStringToHex(ds.Digest), buf)
 }
 
-func DSFromWire(buf *util.InputBuffer, ll uint16) (*DS, error) {
+func (ds *DS) FromWire(buf *util.InputBuffer, ll uint16) error {
 	keyTag, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	algorithm, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	typ, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	digest, ll, err := fieldFromWire(RDF_C_BINARY, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if ll != 0 {
-		return nil, fmt.Errorf("extra data in rdata part")
+		return fmt.Errorf("extra data in rdata part")
 	}
 
-	return &DS{
-		KeyTag:     keyTag.(uint16),
-		Algorithm:  algorithm.(uint8),
-		DigestType: typ.(uint8),
-		Digest:     hex.EncodeToString(digest.([]uint8)),
-	}, nil
+	ds.KeyTag = keyTag.(uint16)
+	ds.Algorithm = algorithm.(uint8)
+	ds.DigestType = typ.(uint8)
+	ds.Digest = hex.EncodeToString(digest.([]uint8))
+	return nil
 }
 
 var dsRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(.*?)\s*$`)

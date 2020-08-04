@@ -59,32 +59,35 @@ func (srv *SRV) String() string {
 	return strings.Join(ss, " ")
 }
 
-func SRVFromWire(buf *util.InputBuffer, ll uint16) (*SRV, error) {
-	p, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
+func (srv *SRV) FromWire(buf *util.InputBuffer, ll uint16) error {
+	priority, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	w, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
+	weight, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	port, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	t, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+	n, ll, err := nameFieldFromWire(srv.Target, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else if ll != 0 {
+		return errors.New("extra data in mx rdata part")
+	} else {
+		srv.Target = n
 	}
 
-	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
-	}
-
-	return &SRV{p.(uint16), w.(uint16), port.(uint16), t.(*Name)}, nil
+	srv.Priority = priority.(uint16)
+	srv.Weight = weight.(uint16)
+	srv.Port = port.(uint16)
+	return nil
 }
 
 var srvRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)

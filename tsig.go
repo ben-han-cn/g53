@@ -132,85 +132,84 @@ func (msg *Message) SetTSIG(tsig *TSIG) {
 	msg.Tsig = tsig
 }
 
-func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
-	i, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+func (tsig *TSIG) FromWire(buf *util.InputBuffer, ll uint16) error {
+	var name Name
+	n, ll, err := nameFieldFromWire(&name, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	alg, _ := i.(*Name)
-	algo := TSIGAlgorithm(alg.String(false))
+	algo := TSIGAlgorithm(n.String(false))
 
-	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
+	i, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ts1, _ := i.(uint16)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ts2, _ := i.(uint32)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	fudge, _ := i.(uint16)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	macSize, _ := i.(uint16)
 
 	i, _, err = fieldFromWire(RDF_C_BINARY, buf, macSize)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ll -= macSize
 	mac, _ := i.([]byte)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	oid, _ := i.(uint16)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	erro, _ := i.(uint16)
 
 	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	len, _ := i.(uint16)
 
 	i, _, err = fieldFromWire(RDF_C_BINARY, buf, len)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ll -= len
 	odata, _ := i.([]byte)
 
 	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in rdata part")
 	}
 
-	return &TSIG{
-		Algorithm:  algo,
-		TimeSigned: ((uint64(ts1) & 0x000000000000ffff) << 32) + uint64(ts2),
-		Fudge:      fudge,
-		MACSize:    macSize,
-		MAC:        mac,
-		OrigId:     oid,
-		Error:      erro,
-		OtherLen:   len,
-		OtherData:  odata,
-	}, nil
+	tsig.Algorithm = algo
+	tsig.TimeSigned = ((uint64(ts1) & 0x000000000000ffff) << 32) + uint64(ts2)
+	tsig.Fudge = fudge
+	tsig.MACSize = macSize
+	tsig.MAC = mac
+	tsig.OrigId = oid
+	tsig.Error = erro
+	tsig.OtherLen = len
+	tsig.OtherData = odata
+	return nil
 }
 
 func TSIGFromRRset(rrset *RRset) (*TSIG, error) {

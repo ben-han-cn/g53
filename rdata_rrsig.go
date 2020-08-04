@@ -111,57 +111,67 @@ func (rrsig *RRSig) String() string {
 	return buf.String()
 }
 
-func RRSigFromWire(buf *util.InputBuffer, ll uint16) (*RRSig, error) {
+func (rrsig *RRSig) FromWire(buf *util.InputBuffer, ll uint16) error {
 	covered, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	algorithm, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	labels, ll, err := fieldFromWire(RDF_C_UINT8, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	originalTtl, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	sigExpire, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	inception, ll, err := fieldFromWire(RDF_C_UINT32, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tag, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	signer, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+	n, ll, err := nameFieldFromWire(rrsig.Signer, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
+	} else {
+		rrsig.Signer = n
 	}
 
 	signature, ll, err := fieldFromWire(RDF_C_BINARY, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if ll != 0 {
-		return nil, errors.New("extra data in rdata part")
+		return errors.New("extra data in rdata part")
 	}
 
-	return &RRSig{RRType(covered.(uint16)), algorithm.(uint8), labels.(uint8), originalTtl.(uint32), sigExpire.(uint32), inception.(uint32), tag.(uint16), signer.(*Name), signature.([]uint8)}, nil
+	rrsig.Covered = RRType(covered.(uint16))
+	rrsig.Algorithm = algorithm.(uint8)
+	rrsig.Labels = labels.(uint8)
+	rrsig.OriginalTtl = originalTtl.(uint32)
+	rrsig.SigExpire = sigExpire.(uint32)
+	rrsig.Inception = inception.(uint32)
+	rrsig.Tag = tag.(uint16)
+	rrsig.Signature = signature.([]uint8)
+	return nil
 }
 
 var rrsigRdataTemplate = regexp.MustCompile(`^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$`)

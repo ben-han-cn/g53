@@ -26,15 +26,16 @@ func (txt *Txt) String() string {
 	return fieldToString(RDF_D_TXT, txt.Data)
 }
 
-func TxtFromWire(buf *util.InputBuffer, ll uint16) (*Txt, error) {
+func (txt *Txt) FromWire(buf *util.InputBuffer, ll uint16) error {
 	f, ll, err := fieldFromWire(RDF_C_TXT, buf, ll)
 	if err != nil {
-		return nil, err
+		return err
 	} else if ll != 0 {
-		return nil, errors.New("extra data in rdata part when parse txt")
+		return errors.New("extra data in rdata part when parse txt")
 	} else {
 		data, _ := f.([]string)
-		return &Txt{data}, nil
+		txt.Data = data
+		return nil
 	}
 }
 
