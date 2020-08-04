@@ -30,19 +30,28 @@ type Option interface {
 }
 
 func EdnsFromWire(buf *util.InputBuffer) (*EDNS, error) {
-	if _, err := buf.ReadUint8(); err != nil {
+	e := EDNS{}
+	if err := e.FromWire(buf); err != nil {
 		return nil, err
+	} else {
+		return &e, nil
+	}
+}
+
+func (e *EDNS) FromWire(buf *util.InputBuffer) error {
+	if _, err := buf.ReadUint8(); err != nil {
+		return err
 	}
 
 	if t, err := TypeFromWire(buf); err != nil {
-		return nil, err
+		return err
 	} else if t != RR_OPT {
-		return nil, errors.New("edns rr type isn't opt")
+		return errors.New("edns rr type isn't opt")
 	}
 
 	udpSize, err := ClassFromWire(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	flags_, err := TTLFromWire(buf)
@@ -51,7 +60,7 @@ func EdnsFromWire(buf *util.InputBuffer) (*EDNS, error) {
 	version := uint8((uint32(flags_) & VERSION_MASK) >> VERSION_SHIFT)
 
 	rdlen, _ := buf.ReadUint16()
-	opts := []Option{}
+	opts := e.Options[:0]
 	if rdlen != 0 {
 		code, _ := buf.ReadUint16()
 		switch code {
@@ -59,27 +68,32 @@ func EdnsFromWire(buf *util.InputBuffer) (*EDNS, error) {
 			if opt, err := subnetOptFromWire(buf); err == nil {
 				opts = append(opts, opt)
 			} else {
-				return nil, err
+				return err
 			}
 		case EDNS_VIEW:
 			if opt, err := viewOptFromWire(buf); err == nil {
 				opts = append(opts, opt)
 			} else {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return &EDNS{
-		Version:       version,
-		extendedRcode: extendedRcode,
-		UdpSize:       uint16(udpSize),
-		DnssecAware:   dnssecAware,
-		Options:       opts,
-	}, nil
+	e.Version = version
+	e.extendedRcode = extendedRcode
+	e.UdpSize = uint16(udpSize)
+	e.DnssecAware = dnssecAware
+	e.Options = opts
+	return nil
 }
 
 func EdnsFromRRset(rrset *RRset) *EDNS {
+	var e EDNS
+	e.FromRRset(rrset)
+	return &e
+}
+
+func (e *EDNS) FromRRset(rrset *RRset) {
 	util.Assert(rrset.Type == RR_OPT, "edns should generate from otp")
 
 	udpSize := uint16(rrset.Class)
@@ -88,7 +102,7 @@ func EdnsFromRRset(rrset *RRset) *EDNS {
 	extendedRcode := uint8(flags >> EXTRCODE_SHIFT)
 	version := uint8((flags & VERSION_MASK) >> VERSION_SHIFT)
 
-	opts := []Option{}
+	opts := e.Options[:0]
 	if len(rrset.Rdatas) > 0 {
 		for _, rdata := range rrset.Rdatas {
 			opt := rdata.(*OPT)
@@ -110,13 +124,11 @@ func EdnsFromRRset(rrset *RRset) *EDNS {
 		}
 	}
 
-	return &EDNS{
-		Version:       version,
-		extendedRcode: extendedRcode,
-		UdpSize:       udpSize,
-		DnssecAware:   dnssecAware,
-		Options:       opts,
-	}
+	e.Version = version
+	e.extendedRcode = extendedRcode
+	e.UdpSize = udpSize
+	e.DnssecAware = dnssecAware
+	e.Options = opts
 }
 
 func (e *EDNS) Rend(r *MsgRender) {

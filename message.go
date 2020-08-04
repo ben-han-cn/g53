@@ -59,6 +59,7 @@ type Message struct {
 	Question *Question
 	question Question
 	Sections [SectionCount]Section
+	edns     EDNS
 	Edns     *EDNS
 	Tsig     *TSIG
 }
@@ -74,16 +75,17 @@ func MakeQuery(name *Name, typ RRType, size int, dnssec bool) *Message {
 	m := &Message{
 		Header: h,
 		question: Question{
-			Name:  *name,
+			Name:  name,
 			Type:  typ,
 			Class: CLASS_IN,
 		},
-		Edns: &EDNS{
+		edns: EDNS{
 			UdpSize:     uint16(size),
 			DnssecAware: dnssec,
 		},
 	}
 	m.Question = &m.question
+	m.Edns = &m.edns
 	return m
 }
 
@@ -168,7 +170,8 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 
 	if lastRRset != nil {
 		if st == AdditionalSection && lastRRset.Type == RR_OPT {
-			m.Edns = EdnsFromRRset(lastRRset)
+			m.edns.FromRRset(lastRRset)
+			m.Edns = &m.edns
 		} else if st == AdditionalSection && lastRRset.Type == RR_TSIG {
 			if tsig, err := TSIGFromRRset(lastRRset); err != nil {
 				return err
@@ -278,6 +281,7 @@ func (m *Message) GetSection(st SectionType) Section {
 func (m *Message) Clear() {
 	m.Header.Clear()
 	m.Question = nil
+	m.Edns = nil
 	//this will reuse the backend array, this may cause
 	//memory leak if there is a big section but after that
 	//the section has very few rrset

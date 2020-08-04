@@ -10,7 +10,7 @@ func MakeAXFR(zone *Name, tsig *TSIG) *Message {
 	h.Id = util.GenMessageId()
 	h.QDCount = 1
 	q := &Question{
-		Name:  *zone,
+		Name:  zone,
 		Type:  RR_AXFR,
 		Class: CLASS_IN,
 	}
@@ -29,7 +29,7 @@ func MakeIXFR(zone *Name, currentSOA *RRset, tsig *TSIG) *Message {
 	h.Id = util.GenMessageId()
 	h.QDCount = 1
 	q := &Question{
-		Name:  *zone,
+		Name:  zone,
 		Type:  RR_IXFR,
 		Class: CLASS_IN,
 	}

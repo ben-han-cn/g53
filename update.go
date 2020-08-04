@@ -10,7 +10,7 @@ func MakeUpdate(zone *Name) *Message {
 	h.Id = util.GenMessageId()
 
 	q := &Question{
-		Name:  *zone,
+		Name:  zone,
 		Type:  RR_SOA,
 		Class: CLASS_IN,
 	}
