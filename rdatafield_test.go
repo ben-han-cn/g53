@@ -1,8 +1,9 @@
 package g53
 
 import (
-	"github.com/ben-han-cn/g53/util"
 	"testing"
+
+	"github.com/ben-han-cn/g53/util"
 )
 
 func TestIPRdataFromAndToWire(t *testing.T) {
@@ -14,8 +15,16 @@ func TestIPRdataFromAndToWire(t *testing.T) {
 		t.Fatalf("from wire failed with %v", err)
 	}
 
-	if fieldToString(RDF_D_IP, rd) != "192.0.2.1" {
-		t.Errorf("v4 to string failed expect 192.0.2.1 but %v", fieldToString(RDF_D_IP, rd))
+	if fieldToString(RDF_D_IPV4, rd) != "192.0.2.1" {
+		t.Errorf("v4 to string failed expect 192.0.2.1 but %v", fieldToString(RDF_D_IPV4, rd))
+	}
+
+	if _, err := fieldFromString(RDF_D_IPV4, "::1"); err == nil {
+		t.Errorf("v6 address to v4 should fail")
+	}
+
+	if _, err := fieldFromString(RDF_D_IPV6, "1.1.1.1"); err == nil {
+		t.Errorf("v4 address to v6 should fail")
 	}
 
 	if l != 0 {
@@ -34,8 +43,8 @@ func TestIPRdataFromAndToWire(t *testing.T) {
 		t.Fatalf("from wire failed with %v", err)
 	}
 
-	if fieldToString(RDF_D_IP, rd) != "2001:db8::1234" {
-		t.Errorf("v6 to string failed expect 2001:db8::1234 but %v", fieldToString(RDF_D_IP, rd))
+	if fieldToString(RDF_D_IPV6, rd) != "2001:db8::1234" {
+		t.Errorf("v6 to string failed expect 2001:db8::1234 but %v", fieldToString(RDF_D_IPV6, rd))
 	}
 
 	if l != 0 {

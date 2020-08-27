@@ -42,7 +42,8 @@ const (
 const (
 	RDF_D_NAME RDFDisplayType = iota
 	RDF_D_INT
-	RDF_D_IP
+	RDF_D_IPV4
+	RDF_D_IPV6
 	RDF_D_TXT
 	RDF_D_HEX
 	RDF_D_B32
@@ -323,14 +324,27 @@ func fieldFromString(dt RDFDisplayType, s string) (interface{}, error) {
 			return d, nil
 		}
 
-	case RDF_D_IP:
+	case RDF_D_IPV4:
 		ip := net.ParseIP(s)
 		if ip == nil {
 			return nil, ErrInvalidIPAddr
 		} else {
+			ip = ip.To4()
+			if ip == nil {
+				return nil, errors.New("want v4 get v6")
+			} else {
+				return ip, nil
+			}
+		}
+	case RDF_D_IPV6:
+		ip := net.ParseIP(s)
+		if ip == nil {
+			return nil, ErrInvalidIPAddr
+		} else if !strings.Contains(s, ":") {
+			return nil, errors.New("want v6 get v4")
+		} else {
 			return ip, nil
 		}
-
 	case RDF_D_TXT:
 		return txtStringParse(s)
 
@@ -375,7 +389,7 @@ func fieldToString(dt RDFDisplayType, d interface{}) string {
 	case RDF_D_INT:
 		return fmt.Sprintf("%v", d)
 
-	case RDF_D_IP:
+	case RDF_D_IPV4, RDF_D_IPV6:
 		ip, _ := d.(net.IP)
 		return ip.String()
 

@@ -32,7 +32,7 @@ func (a *WA) Compare(other Rdata) int {
 func (a *WA) String() string {
 	return strings.Join([]string{
 		fieldToString(RDF_D_INT, a.Weight),
-		fieldToString(RDF_D_IP, a.Host)}, " ")
+		fieldToString(RDF_D_IPV4, a.Host)}, " ")
 }
 
 func WAFromWire(buf *util.InputBuffer, ll uint16) (*WA, error) {
@@ -71,7 +71,7 @@ func WAFromString(s string) (*WA, error) {
 		return nil, ErrOutOfRange
 	}
 
-	f, err = fieldFromString(RDF_D_IP, fields[1])
+	f, err = fieldFromString(RDF_D_IPV4, fields[1])
 	if err == nil {
 		host, _ := f.(net.IP)
 		return &WA{uint16(weight), host.To4()}, nil

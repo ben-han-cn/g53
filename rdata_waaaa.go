@@ -32,7 +32,7 @@ func (aaaa *WAAAA) Compare(other Rdata) int {
 func (aaaa *WAAAA) String() string {
 	return strings.Join([]string{
 		fieldToString(RDF_D_INT, aaaa.Weight),
-		fieldToString(RDF_D_IP, aaaa.Host)}, " ")
+		fieldToString(RDF_D_IPV6, aaaa.Host)}, " ")
 }
 
 func WAAAAFromWire(buf *util.InputBuffer, ll uint16) (*WAAAA, error) {
@@ -71,7 +71,7 @@ func WAAAAFromString(s string) (*WAAAA, error) {
 		return nil, ErrOutOfRange
 	}
 
-	f, err = fieldFromString(RDF_D_IP, fields[1])
+	f, err = fieldFromString(RDF_D_IPV6, fields[1])
 	if err == nil {
 		host, _ := f.(net.IP)
 		return &WAAAA{uint16(weight), host.To16()}, nil
