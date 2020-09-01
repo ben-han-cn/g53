@@ -175,6 +175,8 @@ func stringParse(nameRaw []byte, start uint, end uint, downcase bool) ([]byte, [
 				state = ftStart
 			} else if c == '\\' {
 				state = ftEscape
+			} else if c == ' ' {
+				return nil, nil, errors.New("found space in name")
 			} else {
 				count += 1
 				if count > MAX_LABEL_LEN {

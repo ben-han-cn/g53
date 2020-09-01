@@ -124,3 +124,23 @@ func TestTxtParse(t *testing.T) {
 		}
 	}
 }
+
+func TestRdataFromString(t *testing.T) {
+	cases := []struct {
+		rdataType     RRType
+		rdataString   string
+		shouldSucceed bool
+	}{
+		{RR_CNAME, "10 good.bpy", false},
+		{RR_WCNAME, "10 good.bpy", true},
+	}
+
+	for _, c := range cases {
+		_, err := RdataFromString(c.rdataType, c.rdataString)
+		if c.shouldSucceed {
+			Assert(t, err == nil, "err should be nil")
+		} else {
+			Assert(t, err != nil, "err should be nil")
+		}
+	}
+}
