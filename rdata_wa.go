@@ -26,13 +26,7 @@ func (a *WA) ToWire(buf *util.OutputBuffer) {
 }
 
 func (a *WA) Compare(other Rdata) int {
-	otherWA := other.(*WA)
-	order := fieldCompare(RDF_C_UINT16, a.Weight, otherWA.Weight)
-	if order != 0 {
-		return order
-	} else {
-		return fieldCompare(RDF_C_IPV4, a.Host, otherWA.Host)
-	}
+	return fieldCompare(RDF_C_IPV4, a.Host, other.(*WA).Host)
 }
 
 func (a *WA) String() string {
