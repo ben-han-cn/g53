@@ -66,7 +66,7 @@ func WCNameFromString(s string) (*WCName, error) {
 		return nil, err
 	}
 	weight, _ := f.(int)
-	if weight > math.MaxUint16 {
+	if weight < 0 || weight > math.MaxUint16 {
 		return nil, ErrOutOfRange
 	}
 
