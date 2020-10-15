@@ -88,7 +88,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 	matchMessageRaw(t, "04b0850000010002000100020474657374076578616d706c6503636f6d0000010001c00c0001000100000e100004c0000202c00c0001000100000e100004c0000201c0110002000100000e100006036e7331c011c04e0001000100000e100004020202020000291000000000000000", &Message{
 		Header: buildHeader(uint16(1200), []FlagField{FLAG_QR, FLAG_AA, FLAG_RD}, []uint16{1, 2, 1, 2}, OP_QUERY, R_NOERROR),
 		Question: &Question{
-			Name:  qn,
+			Name:  *qn,
 			Type:  RR_A,
 			Class: CLASS_IN,
 		},
@@ -230,7 +230,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 	matchMessageRaw(t, knet_cn, &Message{
 		Header: buildHeader(uint16(1200), []FlagField{FLAG_QR, FLAG_RD, FLAG_RA}, []uint16{1, 1, 4, 13}, OP_QUERY, R_NOERROR),
 		Question: &Question{
-			Name:  qn,
+			Name:  *qn,
 			Type:  RR_A,
 			Class: CLASS_IN,
 		},

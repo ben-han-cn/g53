@@ -7,7 +7,7 @@ import (
 )
 
 type Question struct {
-	Name  *Name
+	Name  Name
 	Type  RRType
 	Class RRClass
 }
@@ -22,10 +22,6 @@ func QuestionFromWire(buf *util.InputBuffer) (*Question, error) {
 }
 
 func (q *Question) FromWire(buf *util.InputBuffer) error {
-	if q.Name == nil {
-		q.Name = &Name{}
-	}
-
 	if err := q.Name.FromWire(buf, false); err != nil {
 		return err
 	}
@@ -61,7 +57,7 @@ func (q *Question) String() string {
 }
 
 func (q *Question) Equals(o *Question) bool {
-	return q.Name.Equals(o.Name) &&
+	return q.Name.Equals(&o.Name) &&
 		q.Type == o.Type &&
 		q.Class == o.Class
 }

@@ -75,7 +75,7 @@ func MakeQuery(name *Name, typ RRType, size int, dnssec bool) *Message {
 	m := &Message{
 		Header: h,
 		question: Question{
-			Name:  name,
+			Name:  *name,
 			Type:  typ,
 			Class: CLASS_IN,
 		},
