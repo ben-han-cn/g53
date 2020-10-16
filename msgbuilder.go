@@ -65,9 +65,9 @@ func (b *MsgBuilder) SetId(id uint16) *MsgBuilder {
 	return b
 }
 
-func (b *MsgBuilder) ResizeSlice(st SectionType, count int) *MsgBuilder {
+func (b *MsgBuilder) ResizeSection(st SectionType, count int) *MsgBuilder {
 	if count > 0 {
-		b.msg.Sections[st] = make([]*RRset, 0, count)
+		b.msg.sections[st] = make([]*RRset, 0, count)
 	}
 	return b
 }
@@ -77,7 +77,7 @@ func (b *MsgBuilder) AddRRset(st SectionType, rrset *RRset) *MsgBuilder {
 		panic("opt and rrsig cann't be set directly")
 	}
 
-	b.msg.Sections[st] = append(b.msg.Sections[st], rrset)
+	b.msg.sections[st] = append(b.msg.sections[st], rrset)
 	return b
 }
 
@@ -99,8 +99,8 @@ func (b *MsgBuilder) AddRR(st SectionType, name *Name, typ RRType, class RRClass
 		}
 
 		if i := msg.rrsetIndex(st, name, typ, class); i != -1 {
-			msg.Sections[st][i].AddRdata(rdata)
-			msg.Sections[st][i].Ttl = ttl
+			msg.sections[st][i].AddRdata(rdata)
+			msg.sections[st][i].Ttl = ttl
 			return b
 		}
 	}
@@ -115,7 +115,7 @@ func (b *MsgBuilder) AddRR(st SectionType, name *Name, typ RRType, class RRClass
 }
 
 func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRClass) int {
-	s := m.Sections[st]
+	s := m.sections[st]
 	for i := 0; i < len(s); i++ {
 		if s[i].Class == class &&
 			s[i].Type == typ &&
@@ -149,7 +149,7 @@ func (b *MsgBuilder) ClearSection(st SectionType) *MsgBuilder {
 }
 
 func (m *Message) clearSection(st SectionType) {
-	m.Sections[st] = nil
+	m.sections[st] = nil
 	switch st {
 	case AnswerSection:
 		m.Header.ANCount = 0

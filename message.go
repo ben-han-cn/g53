@@ -58,7 +58,7 @@ type Message struct {
 	Header   Header
 	Question *Question
 	question Question
-	Sections [SectionCount]Section
+	sections [SectionCount]Section
 	edns     EDNS
 	Edns     *EDNS
 	Tsig     *TSIG
@@ -104,13 +104,13 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 	switch st {
 	case AnswerSection:
 		count = m.Header.ANCount
-		s = m.Sections[0]
+		s = m.sections[0]
 	case AuthSection:
 		count = m.Header.NSCount
-		s = m.Sections[1]
+		s = m.sections[1]
 	case AdditionalSection:
 		count = m.Header.ARCount
-		s = m.Sections[2]
+		s = m.sections[2]
 	}
 
 	var lastRRset *RRset
@@ -158,7 +158,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		}
 	}
 
-	m.Sections[st] = s
+	m.sections[st] = s
 	return nil
 }
 
@@ -174,7 +174,7 @@ func (m *Message) Rend(r *MsgRender) {
 	}
 
 	for i := 0; i < SectionCount; i++ {
-		m.Sections[i].Rend(r)
+		m.sections[i].Rend(r)
 	}
 
 	if m.Edns != nil {
@@ -195,7 +195,7 @@ func (m *Message) ToWire(buf *util.OutputBuffer) {
 	}
 
 	for i := 0; i < SectionCount; i++ {
-		m.Sections[i].ToWire(buf)
+		m.sections[i].ToWire(buf)
 	}
 }
 
@@ -215,19 +215,19 @@ func (m *Message) String() string {
 		buf.WriteByte('\n')
 	}
 
-	if len(m.Sections[AnswerSection]) > 0 {
+	if len(m.sections[AnswerSection]) > 0 {
 		buf.WriteString("\n;; ANSWER SECTION:\n")
-		buf.WriteString(m.Sections[AnswerSection].String())
+		buf.WriteString(m.sections[AnswerSection].String())
 	}
 
-	if len(m.Sections[AuthSection]) > 0 {
+	if len(m.sections[AuthSection]) > 0 {
 		buf.WriteString("\n;; AUTHORITY SECTION:\n")
-		buf.WriteString(m.Sections[AuthSection].String())
+		buf.WriteString(m.sections[AuthSection].String())
 	}
 
-	if len(m.Sections[AdditionalSection]) > 0 {
+	if len(m.sections[AdditionalSection]) > 0 {
 		buf.WriteString("\n;; ADDITIONAL SECTION:\n")
-		buf.WriteString(m.Sections[AdditionalSection].String())
+		buf.WriteString(m.sections[AdditionalSection].String())
 	}
 
 	if m.Tsig != nil {
@@ -239,7 +239,7 @@ func (m *Message) String() string {
 }
 
 func (m *Message) GetSection(st SectionType) Section {
-	return m.Sections[st]
+	return m.sections[st]
 }
 
 func (m *Message) Clear() {
@@ -250,7 +250,7 @@ func (m *Message) Clear() {
 	//memory leak if there is a big section but after that
 	//the section has very few rrset
 	for i := 0; i < SectionCount; i++ {
-		m.Sections[i] = m.Sections[i][:0]
+		m.sections[i] = m.sections[i][:0]
 	}
 	m.Edns = nil
 	m.Tsig = nil
@@ -262,9 +262,9 @@ func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
 
 func (m *Message) SectionRRCount(st SectionType) int {
 	if st != AdditionalSection || (m.Edns == nil && m.Tsig == nil) {
-		return m.Sections[st].rrCount()
+		return m.sections[st].rrCount()
 	} else {
-		c := m.Sections[st].rrCount()
+		c := m.sections[st].rrCount()
 		if m.Edns != nil {
 			c += m.Edns.RRCount()
 		}
@@ -277,9 +277,9 @@ func (m *Message) SectionRRCount(st SectionType) int {
 
 func (m *Message) SectionRRsetCount(st SectionType) int {
 	if st != AdditionalSection || (m.Edns == nil && m.Tsig == nil) {
-		return len(m.Sections[st])
+		return len(m.sections[st])
 	} else {
-		c := len(m.Sections[st])
+		c := len(m.sections[st])
 		if m.Edns != nil {
 			c += 1
 		}
