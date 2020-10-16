@@ -8,7 +8,7 @@ type MsgBuilder struct {
 	msg *Message
 }
 
-func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) *MsgBuilder {
+func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) MsgBuilder {
 	q := &Question{
 		Name:  *name,
 		Type:  typ,
@@ -28,7 +28,7 @@ func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) *MsgBuilde
 		SetEdns(edns)
 }
 
-func NewResponseBuilder(req *Message) *MsgBuilder {
+func NewResponseBuilder(req *Message) MsgBuilder {
 	if req.Question == nil {
 		panic("request has no question")
 	}
@@ -42,44 +42,44 @@ func NewResponseBuilder(req *Message) *MsgBuilder {
 		SetEdns(req.Edns)
 }
 
-func newMsgBuilder() *MsgBuilder {
-	return &MsgBuilder{&Message{}}
+func newMsgBuilder() MsgBuilder {
+	return MsgBuilder{&Message{}}
 }
 
-func (b *MsgBuilder) SetQuestion(q *Question) *MsgBuilder {
+func (b MsgBuilder) SetQuestion(q *Question) MsgBuilder {
 	b.msg.question = *q
 	b.msg.Question = &b.msg.question
 	return b
 }
 
-func (b *MsgBuilder) SetHeaderFlag(f FlagField, set bool) *MsgBuilder {
+func (b MsgBuilder) SetHeaderFlag(f FlagField, set bool) MsgBuilder {
 	b.msg.Header.SetFlag(f, set)
 	return b
 }
 
-func (b *MsgBuilder) SetOpcode(o Opcode) *MsgBuilder {
+func (b MsgBuilder) SetOpcode(o Opcode) MsgBuilder {
 	b.msg.Header.Opcode = o
 	return b
 }
 
-func (b *MsgBuilder) SetRcode(r Rcode) *MsgBuilder {
+func (b MsgBuilder) SetRcode(r Rcode) MsgBuilder {
 	b.msg.Header.Rcode = r
 	return b
 }
 
-func (b *MsgBuilder) SetId(id uint16) *MsgBuilder {
+func (b MsgBuilder) SetId(id uint16) MsgBuilder {
 	b.msg.Header.Id = id
 	return b
 }
 
-func (b *MsgBuilder) ResizeSection(st SectionType, count int) *MsgBuilder {
+func (b MsgBuilder) ResizeSection(st SectionType, count int) MsgBuilder {
 	if count > 0 {
 		b.msg.sections[st] = make([]*RRset, 0, count)
 	}
 	return b
 }
 
-func (b *MsgBuilder) AddRRset(st SectionType, rrset *RRset) *MsgBuilder {
+func (b MsgBuilder) AddRRset(st SectionType, rrset *RRset) MsgBuilder {
 	if rrset.Type == RR_OPT || rrset.Type == RR_TSIG {
 		panic("opt and rrsig cann't be set directly")
 	}
@@ -88,7 +88,7 @@ func (b *MsgBuilder) AddRRset(st SectionType, rrset *RRset) *MsgBuilder {
 	return b
 }
 
-func (b *MsgBuilder) SetEdns(edns *EDNS) *MsgBuilder {
+func (b MsgBuilder) SetEdns(edns *EDNS) MsgBuilder {
 	if edns == nil {
 		b.msg.Edns = nil
 	} else {
@@ -98,7 +98,7 @@ func (b *MsgBuilder) SetEdns(edns *EDNS) *MsgBuilder {
 	return b
 }
 
-func (b *MsgBuilder) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) *MsgBuilder {
+func (b MsgBuilder) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) MsgBuilder {
 	msg := b.msg
 	if merge {
 		if typ == RR_OPT || typ == RR_TSIG {
@@ -133,7 +133,7 @@ func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRCla
 	return -1
 }
 
-func (b *MsgBuilder) Done() *Message {
+func (b MsgBuilder) Done() *Message {
 	b.msg.recalculateSectionRRCount()
 	return b.msg
 }
@@ -150,7 +150,7 @@ func (m *Message) recalculateSectionRRCount() {
 	m.Header.ARCount = uint16(m.SectionRRCount(AdditionalSection))
 }
 
-func (b *MsgBuilder) ClearSection(st SectionType) *MsgBuilder {
+func (b MsgBuilder) ClearSection(st SectionType) MsgBuilder {
 	b.msg.clearSection(st)
 	return b
 }
@@ -171,7 +171,7 @@ func (m *Message) clearSection(st SectionType) {
 	}
 }
 
-func (b *MsgBuilder) SetTsig(tsig *TSIG) *MsgBuilder {
+func (b MsgBuilder) SetTsig(tsig *TSIG) MsgBuilder {
 	b.msg.setTsig(tsig)
 	return b
 }
