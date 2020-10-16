@@ -1,7 +1,5 @@
 package g53
 
-import ()
-
 type Rcode uint8
 
 const (

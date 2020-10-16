@@ -8,7 +8,7 @@ type MsgBuilder struct {
 	msg *Message
 }
 
-func NewMsgBuilder(name *Name, typ RRType, size int, dnssec bool) *MsgBuilder {
+func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) *MsgBuilder {
 	q := &Question{
 		Name:  *name,
 		Type:  typ,
@@ -19,10 +19,16 @@ func NewMsgBuilder(name *Name, typ RRType, size int, dnssec bool) *MsgBuilder {
 		DnssecAware: dnssec,
 	}
 
-	return newMsgBuilder().SetHeaderFlag(FLAG_RD, true).SetOpcode(OP_QUERY).SetId(util.GenMessageId()).SetQuestion(q).SetEdns(edns)
+	return newMsgBuilder().
+		SetHeaderFlag(FLAG_RD, true).
+		SetOpcode(OP_QUERY).
+		SetRcode(R_NOERROR).
+		SetId(util.GenMessageId()).
+		SetQuestion(q).
+		SetEdns(edns)
 }
 
-func NewMsgBuilderWithQuery(req *Message) *MsgBuilder {
+func NewResponseBuilder(req *Message) *MsgBuilder {
 	if req.Question == nil {
 		panic("request has no question")
 	}
@@ -31,6 +37,7 @@ func NewMsgBuilderWithQuery(req *Message) *MsgBuilder {
 		SetHeaderFlag(FLAG_QR, true).
 		SetHeaderFlag(FLAG_RD, req.Header.GetFlag(FLAG_RD)).
 		SetOpcode(req.Header.Opcode).
+		SetRcode(R_NOERROR).
 		SetQuestion(req.Question).
 		SetEdns(req.Edns)
 }
