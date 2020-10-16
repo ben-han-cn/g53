@@ -64,31 +64,6 @@ type Message struct {
 	Tsig     *TSIG
 }
 
-func MakeQuery(name *Name, typ RRType, size int, dnssec bool) *Message {
-	h := Header{}
-	h.SetFlag(FLAG_RD, true)
-	h.Opcode = OP_QUERY
-	h.Id = util.GenMessageId()
-	h.QDCount = 1
-	h.ARCount = 1
-
-	m := &Message{
-		Header: h,
-		question: Question{
-			Name:  *name,
-			Type:  typ,
-			Class: CLASS_IN,
-		},
-		edns: EDNS{
-			UdpSize:     uint16(size),
-			DnssecAware: dnssec,
-		},
-	}
-	m.Question = &m.question
-	m.Edns = &m.edns
-	return m
-}
-
 func MessageFromWire(buf *util.InputBuffer) (*Message, error) {
 	m := Message{}
 	if err := m.FromWire(buf); err != nil {
@@ -188,6 +163,10 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 }
 
 func (m *Message) Rend(r *MsgRender) {
+	if m.Tsig != nil {
+		m.Header.ARCount -= 1
+	}
+
 	(&m.Header).Rend(r)
 
 	if m.Question != nil {
@@ -204,23 +183,8 @@ func (m *Message) Rend(r *MsgRender) {
 
 	if m.Tsig != nil {
 		m.Tsig.Rend(r)
-		r.WriteUint16At(uint16(m.Header.ARCount+1), 10)
-	}
-}
-
-func (m *Message) RecalculateSectionRRCount() {
-	if m.Question == nil {
-		m.Header.QDCount = 0
-	} else {
-		m.Header.QDCount = 1
-	}
-
-	m.Header.ANCount = uint16(m.Sections[AnswerSection].rrCount())
-	m.Header.NSCount = uint16(m.Sections[AuthSection].rrCount())
-	m.Header.ARCount = uint16(m.Sections[AdditionalSection].rrCount())
-
-	if m.Edns != nil {
-		m.Header.ARCount += uint16(m.Edns.RRCount())
+		m.Header.ARCount += 1
+		r.WriteUint16At(uint16(m.Header.ARCount), 10)
 	}
 }
 
@@ -292,83 +256,36 @@ func (m *Message) Clear() {
 	m.Tsig = nil
 }
 
-func (m *Message) AddRRset(st SectionType, rrset *RRset) {
-	m.Sections[st] = append(m.Sections[st], rrset)
-}
-
-func (m *Message) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) {
-	if merge {
-		if i := m.rrsetIndex(st, name, typ, class); i != -1 {
-			m.Sections[st][i].AddRdata(rdata)
-			m.Sections[st][i].Ttl = ttl
-			return
-		}
-	}
-
-	m.AddRRset(st, &RRset{
-		Name:   name.Clone(),
-		Type:   typ,
-		Class:  class,
-		Ttl:    ttl,
-		Rdatas: []Rdata{rdata},
-	})
-}
-
 func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
 	return m.rrsetIndex(st, &rrset.Name, rrset.Type, rrset.Class) != -1
 }
 
-func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRClass) int {
-	s := m.Sections[st]
-	for i := 0; i < len(s); i++ {
-		if s[i].Class == class &&
-			s[i].Type == typ &&
-			s[i].Name.Equals(name) {
-			return i
+func (m *Message) SectionRRCount(st SectionType) int {
+	if st != AdditionalSection || (m.Edns == nil && m.Tsig == nil) {
+		return m.Sections[st].rrCount()
+	} else {
+		c := m.Sections[st].rrCount()
+		if m.Edns != nil {
+			c += m.Edns.RRCount()
 		}
-	}
-	return -1
-}
-
-func (m *Message) MakeResponse() *Message {
-	h := Header{
-		Id:      m.Header.Id,
-		Opcode:  m.Header.Opcode,
-		QDCount: m.Header.QDCount,
-	}
-
-	h.SetFlag(FLAG_QR, true)
-	h.SetFlag(FLAG_RD, m.Header.GetFlag(FLAG_RD))
-
-	resp := &Message{
-		Header:   h,
-		question: m.question,
-		Edns:     m.Edns,
-	}
-	resp.Question = &resp.question
-	return resp
-}
-
-func (m *Message) ClearSection(s SectionType) {
-	m.Sections[s] = nil
-	switch s {
-	case AnswerSection:
-		m.Header.ANCount = 0
-	case AuthSection:
-		m.Header.NSCount = 0
-	case AdditionalSection:
-		m.Edns = nil
-		m.Tsig = nil
-		m.Header.ARCount = 0
-	default:
-		panic("question section couldn't be cleared")
+		if m.Tsig != nil {
+			c += 1
+		}
+		return c
 	}
 }
 
-func (m *Message) SectionRRCount(s SectionType) int {
-	return m.Sections[s].rrCount()
-}
-
-func (m *Message) SectionRRsetCount(s SectionType) int {
-	return len(m.Sections[s])
+func (m *Message) SectionRRsetCount(st SectionType) int {
+	if st != AdditionalSection || (m.Edns == nil && m.Tsig == nil) {
+		return len(m.Sections[st])
+	} else {
+		c := len(m.Sections[st])
+		if m.Edns != nil {
+			c += 1
+		}
+		if m.Tsig != nil {
+			c += 1
+		}
+		return c
+	}
 }

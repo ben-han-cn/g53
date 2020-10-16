@@ -1,0 +1,177 @@
+package g53
+
+import (
+	"github.com/ben-han-cn/g53/util"
+)
+
+type MsgBuilder struct {
+	msg *Message
+}
+
+func NewMsgBuilder(name *Name, typ RRType, size int, dnssec bool) *MsgBuilder {
+	q := &Question{
+		Name:  *name,
+		Type:  typ,
+		Class: CLASS_IN,
+	}
+	edns := &EDNS{
+		UdpSize:     uint16(size),
+		DnssecAware: dnssec,
+	}
+
+	return newMsgBuilder().SetHeaderFlag(FLAG_RD, true).SetOpcode(OP_QUERY).SetId(util.GenMessageId()).SetQuestion(q).SetEdns(edns)
+}
+
+func NewMsgBuilderWithQuery(req *Message) *MsgBuilder {
+	if req.Question == nil {
+		panic("request has no question")
+	}
+
+	return newMsgBuilder().SetId(req.Header.Id).
+		SetHeaderFlag(FLAG_QR, true).
+		SetHeaderFlag(FLAG_RD, req.Header.GetFlag(FLAG_RD)).
+		SetOpcode(req.Header.Opcode).
+		SetQuestion(req.Question).
+		SetEdns(req.Edns)
+}
+
+func newMsgBuilder() *MsgBuilder {
+	return &MsgBuilder{&Message{}}
+}
+
+func (b *MsgBuilder) SetQuestion(q *Question) *MsgBuilder {
+	b.msg.question = *q
+	b.msg.Question = &b.msg.question
+	return b
+}
+
+func (b *MsgBuilder) SetHeaderFlag(f FlagField, set bool) *MsgBuilder {
+	b.msg.Header.SetFlag(f, set)
+	return b
+}
+
+func (b *MsgBuilder) SetOpcode(o Opcode) *MsgBuilder {
+	b.msg.Header.Opcode = o
+	return b
+}
+
+func (b *MsgBuilder) SetRcode(r Rcode) *MsgBuilder {
+	b.msg.Header.Rcode = r
+	return b
+}
+
+func (b *MsgBuilder) SetId(id uint16) *MsgBuilder {
+	b.msg.Header.Id = id
+	return b
+}
+
+func (b *MsgBuilder) ResizeSlice(st SectionType, count int) *MsgBuilder {
+	if count > 0 {
+		b.msg.Sections[st] = make([]*RRset, 0, count)
+	}
+	return b
+}
+
+func (b *MsgBuilder) AddRRset(st SectionType, rrset *RRset) *MsgBuilder {
+	if rrset.Type == RR_OPT || rrset.Type == RR_TSIG {
+		panic("opt and rrsig cann't be set directly")
+	}
+
+	b.msg.Sections[st] = append(b.msg.Sections[st], rrset)
+	return b
+}
+
+func (b *MsgBuilder) SetEdns(edns *EDNS) *MsgBuilder {
+	if edns == nil {
+		b.msg.Edns = nil
+	} else {
+		b.msg.edns = *edns
+		b.msg.Edns = &b.msg.edns
+	}
+	return b
+}
+
+func (b *MsgBuilder) AddRR(st SectionType, name *Name, typ RRType, class RRClass, ttl RRTTL, rdata Rdata, merge bool) *MsgBuilder {
+	msg := b.msg
+	if merge {
+		if typ == RR_OPT || typ == RR_TSIG {
+			panic("opt and tsig rrset doesn't support merge")
+		}
+
+		if i := msg.rrsetIndex(st, name, typ, class); i != -1 {
+			msg.Sections[st][i].AddRdata(rdata)
+			msg.Sections[st][i].Ttl = ttl
+			return b
+		}
+	}
+
+	return b.AddRRset(st, &RRset{
+		Name:   name.Clone(),
+		Type:   typ,
+		Class:  class,
+		Ttl:    ttl,
+		Rdatas: []Rdata{rdata},
+	})
+}
+
+func (m *Message) rrsetIndex(st SectionType, name *Name, typ RRType, class RRClass) int {
+	s := m.Sections[st]
+	for i := 0; i < len(s); i++ {
+		if s[i].Class == class &&
+			s[i].Type == typ &&
+			s[i].Name.Equals(name) {
+			return i
+		}
+	}
+	return -1
+}
+
+func (b *MsgBuilder) Done() *Message {
+	b.msg.recalculateSectionRRCount()
+	return b.msg
+}
+
+func (m *Message) recalculateSectionRRCount() {
+	if m.Question == nil {
+		m.Header.QDCount = 0
+	} else {
+		m.Header.QDCount = 1
+	}
+
+	m.Header.ANCount = uint16(m.SectionRRCount(AnswerSection))
+	m.Header.NSCount = uint16(m.SectionRRCount(AuthSection))
+	m.Header.ARCount = uint16(m.SectionRRCount(AdditionalSection))
+}
+
+func (b *MsgBuilder) ClearSection(st SectionType) *MsgBuilder {
+	b.msg.clearSection(st)
+	return b
+}
+
+func (m *Message) clearSection(st SectionType) {
+	m.Sections[st] = nil
+	switch st {
+	case AnswerSection:
+		m.Header.ANCount = 0
+	case AuthSection:
+		m.Header.NSCount = 0
+	case AdditionalSection:
+		m.Edns = nil
+		m.Tsig = nil
+		m.Header.ARCount = 0
+	default:
+		panic("question section couldn't be cleared")
+	}
+}
+
+func (b *MsgBuilder) SetTsig(tsig *TSIG) *MsgBuilder {
+	b.msg.setTsig(tsig)
+	return b
+}
+
+func (m *Message) setTsig(tsig *TSIG) {
+	if tsig != nil {
+		tsig.OrigId = m.Header.Id
+	}
+	m.Tsig = tsig
+}

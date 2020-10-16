@@ -125,13 +125,6 @@ func NewTSIG(key, secret string, alg string) (*TSIG, error) {
 	}, nil
 }
 
-func (msg *Message) SetTSIG(tsig *TSIG) {
-	if tsig != nil {
-		tsig.OrigId = msg.Header.Id
-	}
-	msg.Tsig = tsig
-}
-
 func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
 	i, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
@@ -214,8 +207,8 @@ func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
 }
 
 func TSIGFromRRset(rrset *RRset) (*TSIG, error) {
-	if len(rrset.Rdatas) == 0 {
-		return nil, fmt.Errorf("tsig rrset with empty rdata")
+	if len(rrset.Rdatas) != 1 {
+		return nil, fmt.Errorf("tsig rrset should has one rdata")
 	}
 
 	tsig := rrset.Rdatas[0].(*TSIG)
@@ -358,7 +351,7 @@ func (tsig *TSIG) genMessageHash(messageRaw []byte) {
 func (tsig *TSIG) VerifyTsig(msg *Message, secret string, requestMac []byte) error {
 	msg.Tsig = nil
 	render := NewMsgRender()
-	msg.RecalculateSectionRRCount()
+	msg.Header.ARCount -= 1
 	msg.Rend(render)
 
 	buf := tsig.toWireFmtBuf(render.Data(), requestMac)
