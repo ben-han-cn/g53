@@ -93,7 +93,7 @@ func EdnsFromRRset(rrset *RRset) *EDNS {
 	return &e
 }
 
-func (e *EDNS) FromRRset(rrset *RRset) {
+func (e *EDNS) FromRRset(rrset *RRset) error {
 	util.Assert(rrset.Type == RR_OPT, "edns should generate from otp")
 
 	udpSize := uint16(rrset.Class)
@@ -111,14 +111,22 @@ func (e *EDNS) FromRRset(rrset *RRset) {
 			}
 
 			buf := util.NewInputBuffer(opt.Data)
-			code, _ := buf.ReadUint16()
+			code, err := buf.ReadUint16()
+			if err != nil {
+				return err
+			}
+
 			if code == EDNS_SUBNET {
 				if option, err := subnetOptFromWire(buf); err == nil {
 					opts = append(opts, option)
+				} else {
+					return err
 				}
 			} else if code == EDNS_VIEW {
 				if option, err := viewOptFromWire(buf); err == nil {
 					opts = append(opts, option)
+				} else {
+					return err
 				}
 			}
 		}
@@ -129,6 +137,7 @@ func (e *EDNS) FromRRset(rrset *RRset) {
 	e.UdpSize = udpSize
 	e.DnssecAware = dnssecAware
 	e.Options = opts
+	return nil
 }
 
 func (e *EDNS) Rend(r *MsgRender) {
@@ -184,13 +193,4 @@ func (e *EDNS) String() string {
 
 func (e *EDNS) CleanOption() {
 	e.Options = []Option{}
-}
-
-func (e *EDNS) RRCount() int {
-	optCount := len(e.Options)
-	if optCount == 0 {
-		return 1
-	} else {
-		return optCount
-	}
 }

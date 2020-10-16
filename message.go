@@ -113,15 +113,42 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		s = m.sections[2]
 	}
 
-	var lastRRset *RRset
+	if count == 0 {
+		return nil
+	}
+
+	var (
+		lastRRset *RRset
+		opt       *RRset
+		tsig      *RRset
+	)
 	for i := uint16(0); i < count; i++ {
 		var rrset RRset
 		if err := rrset.FromWire(buf); err != nil {
 			return err
 		}
 
-		if rrset.Type == RR_OPT && st != AdditionalSection {
-			return fmt.Errorf("opt rr exist in non-addtional section")
+		if rrset.Type == RR_OPT {
+			if st != AdditionalSection {
+				return fmt.Errorf("opt rr exist in non-addtional section")
+			}
+			if opt != nil {
+				return fmt.Errorf("opt can only has one rr")
+			}
+			opt = &rrset
+			continue
+		}
+
+		if rrset.Type == RR_TSIG {
+			if st != AdditionalSection {
+				return fmt.Errorf("tsig rr exist in non-addtional section")
+			} else if i != count-1 {
+				return fmt.Errorf("tsig rr isn't the last rr")
+			} else if tsig != nil {
+				return fmt.Errorf("tsig should has only one rr")
+			}
+			tsig = &rrset
+			continue
 		}
 
 		if lastRRset == nil {
@@ -130,8 +157,8 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		}
 
 		if lastRRset.IsSameRRset(&rrset) {
-			if rrset.Type == RR_OPT {
-				return fmt.Errorf("opt should has only one rdata")
+			if rrset.Type == RR_OPT || rrset.Type == RR_TSIG {
+				return fmt.Errorf("opt or tsig should has only one rdata")
 			}
 			if len(rrset.Rdatas) == 0 {
 				return fmt.Errorf("duplicate rrset with empty rdata")
@@ -144,18 +171,26 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 	}
 
 	if lastRRset != nil {
-		if st == AdditionalSection && lastRRset.Type == RR_OPT {
-			m.edns.FromRRset(lastRRset)
-			m.Edns = &m.edns
-		} else if st == AdditionalSection && lastRRset.Type == RR_TSIG {
-			if tsig, err := TSIGFromRRset(lastRRset); err != nil {
-				return err
-			} else {
-				m.Tsig = tsig
-			}
-		} else {
-			s = append(s, lastRRset)
+		s = append(s, lastRRset)
+	}
+
+	if opt != nil {
+		if err := m.edns.FromRRset(opt); err != nil {
+			return err
 		}
+		m.Edns = &m.edns
+	} else {
+		m.Edns = nil
+	}
+
+	if tsig != nil {
+		if tsig, err := TSIGFromRRset(tsig); err != nil {
+			return err
+		} else {
+			m.Tsig = tsig
+		}
+	} else {
+		m.Tsig = nil
 	}
 
 	m.sections[st] = s
@@ -245,7 +280,6 @@ func (m *Message) GetSection(st SectionType) Section {
 func (m *Message) Clear() {
 	m.Header.Clear()
 	m.Question = nil
-	m.Edns = nil
 	//this will reuse the backend array, this may cause
 	//memory leak if there is a big section but after that
 	//the section has very few rrset
@@ -261,31 +295,27 @@ func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
 }
 
 func (m *Message) SectionRRCount(st SectionType) int {
-	if st != AdditionalSection || (m.Edns == nil && m.Tsig == nil) {
-		return m.sections[st].rrCount()
-	} else {
-		c := m.sections[st].rrCount()
+	c := m.sections[st].rrCount()
+	if st == AdditionalSection {
 		if m.Edns != nil {
-			c += m.Edns.RRCount()
+			c += 1
 		}
 		if m.Tsig != nil {
 			c += 1
 		}
-		return c
 	}
+	return c
 }
 
 func (m *Message) SectionRRsetCount(st SectionType) int {
-	if st != AdditionalSection || (m.Edns == nil && m.Tsig == nil) {
-		return len(m.sections[st])
-	} else {
-		c := len(m.sections[st])
+	c := len(m.sections[st])
+	if st == AdditionalSection {
 		if m.Edns != nil {
 			c += 1
 		}
 		if m.Tsig != nil {
 			c += 1
 		}
-		return c
 	}
+	return c
 }
