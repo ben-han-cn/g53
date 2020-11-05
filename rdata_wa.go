@@ -66,7 +66,6 @@ func WAFromString(s string) (*WA, error) {
 
 	f, err := fieldFromString(RDF_D_IPV4, fields[0])
 	if err != nil {
-	} else {
 		return nil, err
 	}
 	host := f.(net.IP).To4()
