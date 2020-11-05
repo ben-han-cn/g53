@@ -15,19 +15,19 @@ type WCName struct {
 }
 
 func (c *WCName) Rend(r *MsgRender) {
-	rendField(RDF_C_UINT16, c.Weight, r)
 	rendField(RDF_C_NAME, c.Name, r)
+	rendField(RDF_C_UINT16, c.Weight, r)
 }
 
 func (c *WCName) ToWire(buf *util.OutputBuffer) {
-	fieldToWire(RDF_C_UINT16, c.Weight, buf)
 	fieldToWire(RDF_C_NAME, c.Name, buf)
+	fieldToWire(RDF_C_UINT16, c.Weight, buf)
 }
 
 func (c *WCName) String() string {
 	return strings.Join([]string{
-		fieldToString(RDF_D_INT, c.Weight),
-		fieldToString(RDF_D_NAME, c.Name)}, " ")
+		fieldToString(RDF_D_NAME, c.Name),
+		fieldToString(RDF_D_INT, c.Weight)}, " ")
 }
 
 func (c *WCName) Compare(other Rdata) int {
@@ -35,19 +35,19 @@ func (c *WCName) Compare(other Rdata) int {
 }
 
 func WCNameFromWire(buf *util.InputBuffer, ll uint16) (*WCName, error) {
-	f, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
+	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
-	weight, _ := f.(uint16)
+	name, _ := n.(*Name)
 
-	n, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
+	f, ll, err := fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
 		return nil, err
 	} else if ll != 0 {
 		return nil, errors.New("extra data in rdata part")
 	} else {
-		name, _ := n.(*Name)
+		weight, _ := f.(uint16)
 		return &WCName{weight, name}, nil
 	}
 }
@@ -61,7 +61,13 @@ func WCNameFromString(s string) (*WCName, error) {
 	}
 
 	fields = fields[1:]
-	f, err := fieldFromString(RDF_D_INT, fields[0])
+	n, err := fieldFromString(RDF_D_NAME, fields[0])
+	if err != nil {
+		return nil, err
+	}
+	name, _ := n.(*Name)
+
+	f, err := fieldFromString(RDF_D_INT, fields[1])
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +76,5 @@ func WCNameFromString(s string) (*WCName, error) {
 		return nil, ErrOutOfRange
 	}
 
-	n, err := fieldFromString(RDF_D_NAME, fields[1])
-	if err == nil {
-		name, _ := n.(*Name)
-		return &WCName{uint16(weight), name}, nil
-	} else {
-		return nil, err
-	}
+	return &WCName{uint16(weight), name}, nil
 }

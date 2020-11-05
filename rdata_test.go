@@ -131,8 +131,8 @@ func TestRdataFromString(t *testing.T) {
 		rdataString   string
 		shouldSucceed bool
 	}{
-		{RR_CNAME, "10 good.bpy", false},
-		{RR_WCNAME, "10 good.bpy", true},
+		{RR_CNAME, "good.bpy 10", false},
+		{RR_WCNAME, "good.bpy 10", true},
 	}
 
 	for _, c := range cases {
