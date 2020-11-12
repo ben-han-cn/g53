@@ -10,7 +10,7 @@ func NewUpdateMsgBuilder(zone *Name) MsgBuilder {
 		Type:  RR_SOA,
 		Class: CLASS_IN,
 	}
-	return newMsgBuilder().SetOpcode(OP_UPDATE).SetId(util.GenMessageId()).SetQuestion(q)
+	return NewMsgBuilder(&Message{}).SetOpcode(OP_UPDATE).SetId(util.GenMessageId()).SetQuestion(q)
 }
 
 //at least one rr with a specified name must exist

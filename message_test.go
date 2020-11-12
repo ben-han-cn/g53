@@ -48,7 +48,7 @@ func TestSimpleMessageFromToWire(t *testing.T) {
 		DnssecAware: false,
 	}
 
-	msg := newMsgBuilder().
+	msg := NewMsgBuilder(&Message{}).
 		SetId(1200).
 		SetHeaderFlag(FLAG_QR, true).
 		SetHeaderFlag(FLAG_AA, true).
@@ -153,7 +153,7 @@ func TestCompliateMessageFromToWire(t *testing.T) {
 		DnssecAware: false,
 	}
 
-	msg := newMsgBuilder().
+	msg := NewMsgBuilder(&Message{}).
 		SetId(1200).
 		SetHeaderFlag(FLAG_QR, true).
 		SetHeaderFlag(FLAG_RD, true).

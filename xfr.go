@@ -10,7 +10,7 @@ func MakeAXFR(zone *Name, tsig *TSIG) *Message {
 		Type:  RR_AXFR,
 		Class: CLASS_IN,
 	}
-	return newMsgBuilder().
+	return NewMsgBuilder(&Message{}).
 		SetId(util.GenMessageId()).
 		SetOpcode(OP_QUERY).
 		SetQuestion(q).
@@ -25,7 +25,7 @@ func MakeIXFR(zone *Name, currentSOA *RRset, tsig *TSIG) *Message {
 		Class: CLASS_IN,
 	}
 
-	return newMsgBuilder().
+	return NewMsgBuilder(&Message{}).
 		SetId(util.GenMessageId()).
 		SetOpcode(OP_QUERY).
 		SetQuestion(q).

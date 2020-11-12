@@ -19,7 +19,7 @@ func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) MsgBuilder
 		DnssecAware: dnssec,
 	}
 
-	return newMsgBuilder().
+	return NewMsgBuilder(&Message{}).
 		SetHeaderFlag(FLAG_RD, true).
 		SetOpcode(OP_QUERY).
 		SetRcode(R_NOERROR).
@@ -33,7 +33,7 @@ func NewResponseBuilder(req *Message) MsgBuilder {
 		panic("request has no question")
 	}
 
-	return newMsgBuilder().SetId(req.Header.Id).
+	return NewMsgBuilder(&Message{}).SetId(req.Header.Id).
 		SetHeaderFlag(FLAG_QR, true).
 		SetHeaderFlag(FLAG_RD, req.Header.GetFlag(FLAG_RD)).
 		SetOpcode(req.Header.Opcode).
@@ -42,8 +42,8 @@ func NewResponseBuilder(req *Message) MsgBuilder {
 		SetEdns(req.Edns)
 }
 
-func newMsgBuilder() MsgBuilder {
-	return MsgBuilder{&Message{}}
+func NewMsgBuilder(msg *Message) MsgBuilder {
+	return MsgBuilder{msg}
 }
 
 func (b MsgBuilder) SetQuestion(q *Question) MsgBuilder {
