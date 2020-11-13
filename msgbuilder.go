@@ -171,6 +171,28 @@ func (m *Message) clearSection(st SectionType) {
 	}
 }
 
+//this will modify rrset order
+func (b MsgBuilder) FilterRRset(st SectionType, f func(*RRset) bool) MsgBuilder {
+	rrsets := b.msg.GetSection(st)
+	l := len(rrsets)
+	for i := 0; i < l; {
+		if !f(rrsets[i]) {
+			if i != l-1 {
+				rrsets[i] = rrsets[l-1]
+			}
+			l -= 1
+			rrsets[l] = nil
+		} else {
+			i += 1
+		}
+	}
+
+	if l != len(rrsets) {
+		b.msg.sections[st] = rrsets[:l]
+	}
+	return b
+}
+
 func (b MsgBuilder) SetTsig(tsig *TSIG) MsgBuilder {
 	b.msg.setTsig(tsig)
 	return b
