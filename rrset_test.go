@@ -5,6 +5,7 @@ import (
 	"net"
 	"testing"
 
+	ut "github.com/ben-han-cn/cement/unittest"
 	"github.com/ben-han-cn/g53/util"
 )
 
@@ -220,4 +221,29 @@ func TestRRsetFromString(t *testing.T) {
 	rrsigStr := ".           86400   IN  RRSIG   SOA 8 0 86400 20170522050000 20170509040000 14796 . AwEAAaHIwpx3w4VHKi6i1LHnTaWeHCL154Jug0Rtc9ji5qwPXpBo6A5sRv7cSsPQKPIwxLpyCrbJ4mr2L0EPOdvP6z6YfljK2ZmTbogU9aSU2fiq/4wjxbdkLyoDVgtO+JsxNN4bjr4WcWhsmk1Hg93FV9ZpkWb0Tbad8DFqNDzr//kZ"
 	_, err := RRsetFromString(rrsigStr)
 	Assert(t, err == nil, "rrsig is valid %v", err)
+}
+
+func TestRRsetFromStrings(t *testing.T) {
+	ss := []string{
+		"a.example.org 30 IN A 1.1.1.1",
+		"a.example.org 30 IN A 2.2.2.2",
+	}
+	rrset, err := RRsetFromStrings(ss)
+	ut.Assert(t, err == nil, "")
+	ut.Equal(t, rrset.RRCount(), 2)
+
+	ss = []string{
+		"a.example.org 30 IN A 1.1.1.1",
+		"b.example.org 30 IN A 2.2.2.2",
+	}
+	_, err = RRsetFromStrings(ss)
+	ut.Assert(t, err != nil, "")
+
+	ss = []string{
+		"a.example.org 30 IN A 1.1.1.1",
+		"b.example.org 30 IN AAAA ::1",
+	}
+	_, err = RRsetFromStrings(ss)
+	ut.Assert(t, err != nil, "")
+
 }

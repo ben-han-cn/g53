@@ -453,7 +453,7 @@ func RRsetFromStrings(ss []string) (*RRset, error) {
 		if err != nil {
 			return nil, err
 		}
-		if orig.IsSameRRset(rrset) {
+		if !orig.IsSameRRset(rrset) {
 			return nil, fmt.Errorf("string doesn't belong to same rrset")
 		}
 		if err := orig.AddRdata(rrset.Rdatas[0]); err != nil {
