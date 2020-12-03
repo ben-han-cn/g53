@@ -438,6 +438,32 @@ func RRsetFromString(s string) (*RRset, error) {
 	}, nil
 }
 
+func RRsetFromStrings(ss []string) (*RRset, error) {
+	if len(ss) == 0 {
+		panic("empty strings")
+	}
+
+	orig, err := RRsetFromString(ss[0])
+	if err != nil {
+		return nil, err
+	}
+
+	for _, s := range ss[1:] {
+		rrset, err := RRsetFromString(s)
+		if err != nil {
+			return nil, err
+		}
+		if orig.IsSameRRset(rrset) {
+			return nil, fmt.Errorf("string doesn't belong to same rrset")
+		}
+		if err := orig.AddRdata(rrset.Rdatas[0]); err != nil {
+			return nil, err
+		}
+	}
+
+	return orig, nil
+}
+
 func RRsetFromWire(buf *util.InputBuffer) (*RRset, error) {
 	var rrset RRset
 	if err := rrset.FromWire(buf); err != nil {
