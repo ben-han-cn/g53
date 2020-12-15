@@ -193,12 +193,12 @@ func (b MsgBuilder) FilterRRset(st SectionType, f func(*RRset) bool) MsgBuilder 
 	return b
 }
 
-func (b MsgBuilder) SetTsig(tsig *TSIG) MsgBuilder {
+func (b MsgBuilder) SetTsig(tsig *Tsig) MsgBuilder {
 	b.msg.setTsig(tsig)
 	return b
 }
 
-func (m *Message) setTsig(tsig *TSIG) {
+func (m *Message) setTsig(tsig *Tsig) {
 	if tsig != nil {
 		tsig.OrigId = m.Header.Id
 	}

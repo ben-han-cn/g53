@@ -76,6 +76,12 @@ func (e *EDNS) FromWire(buf *util.InputBuffer) error {
 			} else {
 				return err
 			}
+		case EDNS_EXPIRE:
+			if opt, err := expireOptFromWire(buf); err == nil {
+				opts = append(opts, opt)
+			} else {
+				return err
+			}
 		}
 	}
 
@@ -124,6 +130,12 @@ func (e *EDNS) FromRRset(rrset *RRset) error {
 				}
 			} else if code == EDNS_VIEW {
 				if option, err := viewOptFromWire(buf); err == nil {
+					opts = append(opts, option)
+				} else {
+					return err
+				}
+			} else if code == EDNS_EXPIRE {
+				if option, err := expireOptFromWire(buf); err == nil {
 					opts = append(opts, option)
 				} else {
 					return err

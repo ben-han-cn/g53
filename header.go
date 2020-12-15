@@ -41,6 +41,8 @@ type Header struct {
 
 func (h *Header) Clear() {
 	h.Flag = 0
+	h.Opcode = 0
+	h.Rcode = 0
 	h.QDCount = 0
 	h.ANCount = 0
 	h.NSCount = 0

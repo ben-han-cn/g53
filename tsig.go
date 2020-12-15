@@ -1,49 +1,15 @@
 package g53
 
 import (
-	"crypto/hmac"
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ben-han-cn/g53/util"
 )
-
-type TSIGAlgorithm string
-
-func AlgorithmFromString(name string) (TSIGAlgorithm, error) {
-	switch strings.ToLower(name) {
-	case "hmac-md5", "hmac-md5.sig-alg.reg.int.":
-		return HmacMD5, nil
-	case "hmac-sha1", "hmac-sha1.":
-		return HmacSHA1, nil
-	case "hmac-sha256", "hmac-sha256.":
-		return HmacSHA256, nil
-	case "hmac-sha512", "hmac-sha512.":
-		return HmacSHA512, nil
-	default:
-		return "", errors.New("No such algorothm")
-	}
-}
-
-const (
-	HmacMD5    TSIGAlgorithm = "hmac-md5.sig-alg.reg.int."
-	HmacSHA1   TSIGAlgorithm = "hmac-sha1."
-	HmacSHA256 TSIGAlgorithm = "hmac-sha256."
-	HmacSHA512 TSIGAlgorithm = "hmac-sha512."
-)
-
-var ErrSig = errors.New("signature error")
-var ErrTime = errors.New("tsig time expired")
 
 type TsigHeader struct {
 	Name     Name
@@ -78,9 +44,9 @@ func (h *TsigHeader) String() string {
 	return strings.Join(s, "\t")
 }
 
-type TSIG struct {
+type Tsig struct {
 	Header     TsigHeader
-	Algorithm  TSIGAlgorithm
+	Algorithm  TsigAlgorithm
 	TimeSigned uint64
 	Fudge      uint16
 	MACSize    uint16
@@ -89,49 +55,18 @@ type TSIG struct {
 	Error      uint16
 	OtherLen   uint16
 	OtherData  []byte
-	hash       hash.Hash
 }
 
-func NewTSIG(key, secret string, alg string) (*TSIG, error) {
-	name, err := NameFromString(key)
-	if err != nil {
-		return nil, err
-	}
-
-	algo, err := AlgorithmFromString(alg)
-	if err != nil {
-		return nil, err
-	}
-
-	h, err := hashSelect(algo, secret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TSIG{
-		Header: TsigHeader{
-			Name:     *name,
-			Rrtype:   RR_TSIG,
-			Class:    CLASS_ANY,
-			Ttl:      0,
-			Rdlength: 0,
-		},
-		Algorithm:  algo,
-		TimeSigned: uint64(time.Now().Unix()),
-		Fudge:      300,
-		Error:      0,
-		OtherLen:   0,
-		hash:       h,
-	}, nil
-}
-
-func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
+func TsigFromWire(buf *util.InputBuffer, ll uint16) (*Tsig, error) {
 	i, ll, err := fieldFromWire(RDF_C_NAME, buf, ll)
 	if err != nil {
 		return nil, err
 	}
-	alg, _ := i.(*Name)
-	algo := TSIGAlgorithm(alg.String(false))
+
+	algo, err := AlgorithmFromString(i.(*Name).String(false))
+	if err != nil {
+		return nil, err
+	}
 
 	i, ll, err = fieldFromWire(RDF_C_UINT16, buf, ll)
 	if err != nil {
@@ -193,7 +128,7 @@ func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
 		return nil, errors.New("extra data in rdata part")
 	}
 
-	return &TSIG{
+	return &Tsig{
 		Algorithm:  algo,
 		TimeSigned: ((uint64(ts1) & 0x000000000000ffff) << 32) + uint64(ts2),
 		Fudge:      fudge,
@@ -206,12 +141,12 @@ func TSIGFromWire(buf *util.InputBuffer, ll uint16) (*TSIG, error) {
 	}, nil
 }
 
-func TSIGFromRRset(rrset *RRset) (*TSIG, error) {
+func TsigFromRRset(rrset *RRset) (*Tsig, error) {
 	if len(rrset.Rdatas) != 1 {
 		return nil, fmt.Errorf("tsig rrset should has one rdata")
 	}
 
-	tsig := rrset.Rdatas[0].(*TSIG)
+	tsig := rrset.Rdatas[0].(*Tsig)
 	tsig.Header = TsigHeader{
 		Name:   rrset.Name,
 		Rrtype: rrset.Type,
@@ -221,8 +156,7 @@ func TSIGFromRRset(rrset *RRset) (*TSIG, error) {
 	return tsig, nil
 }
 
-func (t *TSIG) Rend(r *MsgRender) {
-	t.genMessageHash(r.Data())
+func (t *Tsig) Rend(r *MsgRender) {
 	t.Header.Rend(r)
 	pos := r.Len()
 	alg, _ := NameFromString(string(t.Algorithm))
@@ -241,7 +175,7 @@ func (t *TSIG) Rend(r *MsgRender) {
 	r.WriteUint16At(uint16(r.Len()-pos), pos-2)
 }
 
-func (t *TSIG) ToWire(buf *util.OutputBuffer) {
+func (t *Tsig) ToWire(buf *util.OutputBuffer) {
 	t.Header.ToWire(buf)
 	pos := buf.Len()
 	alg, _ := NameFromString(string(t.Algorithm))
@@ -260,7 +194,7 @@ func (t *TSIG) ToWire(buf *util.OutputBuffer) {
 	buf.WriteUint16At(uint16(buf.Len()-pos), pos-2)
 }
 
-func (t *TSIG) String() string {
+func (t *Tsig) String() string {
 	var s []string
 	s = append(s, t.Header.String())
 	s = append(s, "\t")
@@ -276,172 +210,20 @@ func (t *TSIG) String() string {
 	return strings.Join(s, " ")
 }
 
-func (t *TSIG) Compare(other Rdata) int {
-	return 0
-}
-
-type tsigWireFmt struct {
-	Name       Name
-	Class      RRClass
-	Ttl        RRTTL
-	Algorithm  TSIGAlgorithm
-	TimeSigned uint64
-	Fudge      uint16
-	Error      uint16
-	OtherLen   uint16
-	OtherData  []byte
-}
-
-func (twf *tsigWireFmt) Rend(r *MsgRender) {
-	twf.Name.Rend(r)
-	twf.Class.Rend(r)
-	twf.Ttl.Rend(r)
-	alg, _ := NameFromString(string(twf.Algorithm))
-	alg.Rend(r)
-	ts1 := uint16((twf.TimeSigned & 0x0000ffff00000000) >> 32)
-	ts2 := uint32(twf.TimeSigned & 0x00000000ffffffff)
-	r.WriteUint16(ts1)
-	r.WriteUint32(ts2)
-	r.WriteUint16(twf.Fudge)
-	r.WriteUint16(twf.Error)
-	r.WriteUint16(twf.OtherLen)
-	r.WriteData(twf.OtherData)
-}
-
-func (twf *tsigWireFmt) ToWire(buf *util.OutputBuffer) {
-	twf.Name.ToWire(buf)
-	twf.Class.ToWire(buf)
-	twf.Ttl.ToWire(buf)
-	alg, _ := NameFromString(string(twf.Algorithm))
-	alg.ToWire(buf)
-	ts1 := uint16((twf.TimeSigned & 0x0000ffff00000000) >> 32)
-	ts2 := uint32(twf.TimeSigned & 0x00000000ffffffff)
-	buf.WriteUint16(ts1)
-	buf.WriteUint32(ts2)
-	buf.WriteUint16(twf.Fudge)
-	buf.WriteUint16(twf.Error)
-	buf.WriteUint16(twf.OtherLen)
-	buf.WriteData(twf.OtherData)
-}
-
-type macWirefmt struct {
-	MACSize uint16
-	MAC     []byte
-}
-
-func (mwf *macWirefmt) Rend(r *MsgRender) {
-	r.WriteUint16(mwf.MACSize)
-	r.WriteData(mwf.MAC)
-}
-
-func (mwf *macWirefmt) ToWire(buf *util.OutputBuffer) {
-	buf.WriteUint16(mwf.MACSize)
-	buf.WriteData(mwf.MAC)
-}
-
-func (tsig *TSIG) genMessageHash(messageRaw []byte) {
-	if tsig.Error == 0 {
-		buf := tsig.toWireFmtBuf(messageRaw, tsig.MAC)
-		tsig.hash.Write(buf)
-		tsig.MAC = tsig.hash.Sum(nil)
-		tsig.MACSize = uint16(len(tsig.MAC))
-	}
-}
-
-func (tsig *TSIG) VerifyTsig(msg *Message, secret string, requestMac []byte) error {
-	msg.Tsig = nil
-	render := NewMsgRender()
-	msg.Header.ARCount -= 1
-	msg.Rend(render)
-
-	buf := tsig.toWireFmtBuf(render.Data(), requestMac)
-	now := uint64(time.Now().Unix())
-	ti := now - tsig.TimeSigned
-	if now < tsig.TimeSigned {
-		ti = tsig.TimeSigned - now
-	}
-	if uint64(tsig.Fudge) < ti {
-		return ErrTime
-	}
-
-	h, err := hashSelect(tsig.Algorithm, secret)
-	if err != nil {
-		return err
-	}
-
-	h.Write(buf)
-	if !hmac.Equal(h.Sum(nil), tsig.MAC) {
-		return ErrSig
-	}
-	return nil
-}
-
-func (tsig *TSIG) toWireFmtBuf(msgBuf []byte, requestMac []byte) []byte {
-	buf := util.NewOutputBuffer(512)
-
-	if tsig.TimeSigned == 0 {
-		tsig.TimeSigned = uint64(time.Now().Unix())
-	}
-
-	if tsig.Fudge == 0 {
-		tsig.Fudge = 300
-	}
-
-	if requestMac != nil {
-		(&macWirefmt{
-			MACSize: uint16(len(requestMac)),
-			MAC:     requestMac,
-		}).ToWire(buf)
-	}
-
-	buf.WriteData(msgBuf)
-
-	(&tsigWireFmt{
-		Name:       tsig.Header.Name,
-		Class:      CLASS_ANY,
-		Ttl:        tsig.Header.Ttl,
-		Algorithm:  tsig.Algorithm,
-		TimeSigned: tsig.TimeSigned,
-		Fudge:      tsig.Fudge,
-		Error:      tsig.Error,
-		OtherLen:   tsig.OtherLen,
-		OtherData:  tsig.OtherData,
-	}).ToWire(buf)
-
-	return buf.Data()
-}
-
 func tsigTimeToString(t uint64) string {
 	ti := time.Unix(int64(t), 0).UTC()
 	return ti.Format("20060102150405")
 }
 
-func fromBase64(s []byte) ([]byte, error) {
-	buflen := base64.StdEncoding.DecodedLen(len(s))
-	buf := make([]byte, buflen)
-	if n, err := base64.StdEncoding.Decode(buf, s); err != nil {
-		return nil, err
-	} else {
-		return buf[:n], nil
-	}
+func (t *Tsig) Compare(other Rdata) int {
+	return 0
 }
 
-func hashSelect(algo TSIGAlgorithm, secret string) (hash.Hash, error) {
-	rawsecret, err := fromBase64([]byte(secret))
-	if err != nil {
-		return nil, err
+func (tsig *Tsig) IsTimeValid() bool {
+	now := uint64(time.Now().Unix())
+	ti := now - tsig.TimeSigned
+	if now < tsig.TimeSigned {
+		ti = tsig.TimeSigned - now
 	}
-
-	switch algo {
-	case HmacMD5:
-		return hmac.New(md5.New, rawsecret), nil
-	case HmacSHA1:
-		return hmac.New(sha1.New, rawsecret), nil
-	case HmacSHA256:
-		return hmac.New(sha256.New, rawsecret), nil
-	case HmacSHA512:
-		return hmac.New(sha512.New, rawsecret), nil
-	default:
-		panic("unknown algorithm")
-	}
+	return uint64(tsig.Fudge) >= ti
 }

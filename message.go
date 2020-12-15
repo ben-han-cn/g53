@@ -61,7 +61,7 @@ type Message struct {
 	sections [SectionCount]Section
 	edns     EDNS
 	Edns     *EDNS
-	Tsig     *TSIG
+	Tsig     *Tsig
 }
 
 func MessageFromWire(buf *util.InputBuffer) (*Message, error) {
@@ -184,7 +184,7 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 	}
 
 	if tsig != nil {
-		if tsig, err := TSIGFromRRset(tsig); err != nil {
+		if tsig, err := TsigFromRRset(tsig); err != nil {
 			return err
 		} else {
 			m.Tsig = tsig
@@ -266,7 +266,7 @@ func (m *Message) String() string {
 	}
 
 	if m.Tsig != nil {
-		buf.WriteString("\n;; TSIG PSEUDOSECTION:\n")
+		buf.WriteString("\n;; Tsig PSEUDOSECTION:\n")
 		buf.WriteString(m.Tsig.String())
 	}
 

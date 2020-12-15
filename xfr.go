@@ -4,7 +4,7 @@ import (
 	"github.com/ben-han-cn/g53/util"
 )
 
-func MakeAXFR(zone *Name, tsig *TSIG) *Message {
+func MakeAXFR(zone *Name, tsig *Tsig) *Message {
 	q := &Question{
 		Name:  *zone,
 		Type:  RR_AXFR,
@@ -18,7 +18,7 @@ func MakeAXFR(zone *Name, tsig *TSIG) *Message {
 		Done()
 }
 
-func MakeIXFR(zone *Name, currentSOA *RRset, tsig *TSIG) *Message {
+func MakeIXFR(zone *Name, currentSOA *RRset, tsig *Tsig) *Message {
 	q := &Question{
 		Name:  *zone,
 		Type:  RR_IXFR,

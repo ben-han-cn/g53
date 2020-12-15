@@ -56,7 +56,7 @@ func RdataFromWire(t RRType, buf *util.InputBuffer) (Rdata, error) {
 	case RR_SPF:
 		return SPFFromWire(buf, rdlen)
 	case RR_TSIG:
-		return TSIGFromWire(buf, rdlen)
+		return TsigFromWire(buf, rdlen)
 	case RR_NSEC3:
 		return NSEC3FromWire(buf, rdlen)
 	case RR_DS:

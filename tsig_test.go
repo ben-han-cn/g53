@@ -1,74 +1,17 @@
 package g53
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/ben-han-cn/g53/util"
 )
 
-func TestTsig(t *testing.T) {
-	bindBuf := []byte{186, 134, 40, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 97, 4, 116, 101, 115, 116, 0, 0, 6, 0, 1, 2, 103, 103, 192, 12, 0, 1, 0, 1, 0, 0, 14, 16, 0, 4, 1, 1, 1, 7, 192, 14, 0, 250, 0, 255, 0, 0, 0, 0, 0, 58, 8, 104, 109, 97, 99, 45, 109, 100, 53, 7, 115, 105, 103, 45, 97, 108, 103, 3, 114, 101, 103, 3, 105, 110, 116, 0, 0, 0, 89, 71, 159, 60, 1, 44, 0, 16, 179, 15, 124, 89, 45, 67, 115, 11, 208, 10, 100, 75, 194, 99, 65, 185, 186, 134, 0, 0, 0, 0}
-
-	tsig, err := NewTSIG("test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
-	Assert(t, err == nil, "create new tsig")
-	tsig.TimeSigned = uint64(1497866044)
-
-	builder := NewUpdateMsgBuilder(NameFromStringUnsafe("a.test."))
-	rdata, _ := AFromString("1.1.1.7")
-	rrset := &RRset{
-		Name:   *NameFromStringUnsafe("gg.a.test."),
-		Type:   RR_A,
-		Class:  CLASS_IN,
-		Ttl:    RRTTL(3600),
-		Rdatas: []Rdata{rdata},
-	}
-	msg := builder.UpdateAddRRset(rrset).SetId(47750).SetTsig(tsig).Done()
-	render := NewMsgRender()
-	msg.Rend(render)
-	Assert(t, bytes.Equal(render.Data(), bindBuf), "msg with tsig format error")
-}
-
 func TestVerify(t *testing.T) {
-	name := NameFromStringUnsafe("gg.a.test.")
-	rdata, _ := AFromString("1.1.1.7")
-	rrset := &RRset{
-		Name:   *name,
-		Type:   RR_A,
-		Class:  CLASS_IN,
-		Ttl:    RRTTL(3600),
-		Rdatas: []Rdata{rdata},
-	}
+	reqRaw := []byte{0x74, 0xdc, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0x3, 0x63, 0x6f, 0x6d, 0x0, 0x0, 0x6, 0x0, 0x1, 0x0, 0x0, 0x29, 0x4, 0xd0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x9, 0x0, 0x0, 0x7, 0x61, 0x6c, 0x69, 0x62, 0x61, 0x62, 0x61, 0x0, 0x0, 0xfa, 0x0, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3a, 0x8, 0x68, 0x6d, 0x61, 0x63, 0x2d, 0x6d, 0x64, 0x35, 0x7, 0x73, 0x69, 0x67, 0x2d, 0x61, 0x6c, 0x67, 0x3, 0x72, 0x65, 0x67, 0x3, 0x69, 0x6e, 0x74, 0x0, 0x0, 0x0, 0x5f, 0xd7, 0x70, 0x4c, 0x1, 0x2c, 0x0, 0x10, 0x24, 0x5c, 0xd2, 0x97, 0x1b, 0xc, 0xb9, 0xfe, 0x39, 0x64, 0x85, 0x9a, 0x53, 0x5, 0x9a, 0xb7, 0x74, 0xdc, 0x0, 0x0, 0x0, 0x0}
 
-	tsig, err := NewTSIG("key_test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
-	Assert(t, err == nil, "msg set tsig failed")
-
-	builder := NewUpdateMsgBuilder(NameFromStringUnsafe("a.test."))
-	msg := builder.UpdateAddRRset(rrset).SetId(18425).SetTsig(tsig).Done()
-	render := NewMsgRender()
-	msg.Rend(render)
-	err = msg.Tsig.VerifyTsig(msg, "z08GzEnlCDGy/W3Zw/2NHg==", nil)
-	Assert(t, err == nil, "tsig verify failed")
-}
-
-func TestTSIGFromRRset(t *testing.T) {
-	name := NameFromStringUnsafe("gg.a.test.")
-	rdata, _ := AFromString("1.1.1.7")
-	rrset := &RRset{
-		Name:   *name,
-		Type:   RR_A,
-		Class:  CLASS_IN,
-		Ttl:    RRTTL(3600),
-		Rdatas: []Rdata{rdata},
-	}
-	tsig, err := NewTSIG("key_test.", "z08GzEnlCDGy/W3Zw/2NHg==", "hmac-md5")
-	Assert(t, err == nil, "tsig create failed")
-
-	builder := NewUpdateMsgBuilder(NameFromStringUnsafe("a.test."))
-	msg := builder.UpdateAddRRset(rrset).SetId(18425).SetTsig(tsig).Done()
-	render := NewMsgRender()
-	msg.Rend(render)
-	msgFromBuf, err := MessageFromWire(util.NewInputBuffer(render.Data()))
-	Assert(t, err == nil, "message from wire failed")
-	Assert(t, msgFromBuf.Tsig.String() == tsig.String(), "tsig from rrset failed")
+	req, _ := MessageFromWire(util.NewInputBuffer(reqRaw))
+	key, _ := NewTsigKey("alibaba.",
+		"z08GzEnlCDGy/W3Zw/2NHg==",
+		"hmac-md5")
+	Assert(t, key.VerifyMAC(req, nil) == nil, "")
 }
