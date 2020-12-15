@@ -21,6 +21,14 @@ func QuestionFromWire(buf *util.InputBuffer) (*Question, error) {
 	}
 }
 
+func (q *Question) Clone() Question {
+	return Question{
+		Name:  q.Name.Clone(),
+		Type:  q.Type,
+		Class: q.Class,
+	}
+}
+
 func (q *Question) FromWire(buf *util.InputBuffer) error {
 	if err := q.Name.FromWire(buf, false); err != nil {
 		return err

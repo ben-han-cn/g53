@@ -52,6 +52,13 @@ func (s Section) String() string {
 	return buf.String()
 }
 
+func (s Section) Clear() Section {
+	for i := range s {
+		s[i] = nil
+	}
+	return s[:0]
+}
+
 type Message struct {
 	noCopy
 
@@ -284,7 +291,7 @@ func (m *Message) Clear() {
 	//memory leak if there is a big section but after that
 	//the section has very few rrset
 	for i := 0; i < SectionCount; i++ {
-		m.sections[i] = m.sections[i][:0]
+		m.sections[i] = m.sections[i].Clear()
 	}
 	m.Edns = nil
 	m.Tsig = nil

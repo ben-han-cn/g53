@@ -47,7 +47,7 @@ func NewMsgBuilder(msg *Message) MsgBuilder {
 }
 
 func (b MsgBuilder) SetQuestion(q *Question) MsgBuilder {
-	b.msg.question = *q
+	b.msg.question = q.Clone()
 	b.msg.Question = &b.msg.question
 	return b
 }
