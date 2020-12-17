@@ -67,14 +67,12 @@ func NewTsigKey(name, secret, alg string) (TsigKey, error) {
 }
 
 func (k TsigKey) VerifyMAC(msg *Message, requestMac []byte) error {
-	tsig := msg.Tsig
-	msg.Tsig = nil
 	render := NewMsgRender()
-	msg.Header.ARCount -= 1
-	msg.Rend(render)
-	msg.Tsig = tsig
-	msg.Header.ARCount += 1
-
+	tsig, err := msg.GetTsig()
+	if err != nil {
+		return err
+	}
+	msg.RendWithoutTsig(render)
 	mac := k.genMessageHash(tsig, render, requestMac, false)
 	if !hmac.Equal(mac, tsig.MAC) {
 		return ErrSig
@@ -128,6 +126,15 @@ func (k TsigKey) GenerateTsig(msgId uint16, render *MsgRender, requestMac []byte
 	tsig.MAC = mac
 	tsig.MACSize = uint16(len(mac))
 	return tsig
+}
+
+func (k TsigKey) SignMessage(msg *Message, requestMac []byte, timerOnly bool) []byte {
+	render := NewMsgRender()
+	msg.Rend(render)
+	tsig := k.GenerateTsig(msg.Header.Id, render, requestMac, timerOnly)
+	tsig.Rend(render)
+	render.WriteUint16At(msg.Header.ARCount+1, 10)
+	return render.Data()
 }
 
 //render has rend the message for this tsig to generate hash

@@ -2,8 +2,9 @@ package g53
 
 import (
 	//	"fmt"
-	"github.com/ben-han-cn/g53/util"
 	"testing"
+
+	"github.com/ben-han-cn/g53/util"
 )
 
 func matchEdns(t *testing.T, rawData string, expectEdns EDNS) {

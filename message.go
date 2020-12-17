@@ -47,7 +47,9 @@ func (s Section) ToWire(buf *util.OutputBuffer) {
 func (s Section) String() string {
 	var buf bytes.Buffer
 	for i := 0; i < len(s); i++ {
-		buf.WriteString(s[i].String())
+		if s[i].Type != RR_OPT && s[i].Type != RR_TSIG {
+			buf.WriteString(s[i].String())
+		}
 	}
 	return buf.String()
 }
@@ -66,9 +68,6 @@ type Message struct {
 	Question *Question
 	question Question
 	sections [SectionCount]Section
-	edns     EDNS
-	Edns     *EDNS
-	Tsig     *Tsig
 }
 
 func MessageFromWire(buf *util.InputBuffer) (*Message, error) {
@@ -94,8 +93,6 @@ func (m *Message) FromWire(buf *util.InputBuffer) error {
 		m.Question = nil //in axfr message, question could be nil
 	}
 
-	m.Edns = nil
-	m.Tsig = nil
 	for i := 0; i < SectionCount; i++ {
 		if err := m.sectionFromWire(SectionType(i), buf); err != nil {
 			return err
@@ -126,8 +123,6 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 
 	var (
 		lastRRset *RRset
-		opt       *RRset
-		tsig      *RRset
 	)
 	for i := uint16(0); i < count; i++ {
 		var rrset RRset
@@ -139,23 +134,12 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 			if st != AdditionalSection {
 				return fmt.Errorf("opt rr exist in non-addtional section")
 			}
-			if opt != nil {
-				return fmt.Errorf("opt can only has one rr")
-			}
-			opt = &rrset
-			continue
-		}
-
-		if rrset.Type == RR_TSIG {
+		} else if rrset.Type == RR_TSIG {
 			if st != AdditionalSection {
 				return fmt.Errorf("tsig rr exist in non-addtional section")
 			} else if i != count-1 {
 				return fmt.Errorf("tsig rr isn't the last rr")
-			} else if tsig != nil {
-				return fmt.Errorf("tsig should has only one rr")
 			}
-			tsig = &rrset
-			continue
 		}
 
 		if lastRRset == nil {
@@ -164,8 +148,8 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 		}
 
 		if lastRRset.IsSameRRset(&rrset) {
-			if rrset.Type == RR_OPT || rrset.Type == RR_TSIG {
-				return fmt.Errorf("opt or tsig should has only one rdata")
+			if rrset.Type == RR_TSIG {
+				return fmt.Errorf("tsig should has only one rdata")
 			}
 			if len(rrset.Rdatas) == 0 {
 				return fmt.Errorf("duplicate rrset with empty rdata")
@@ -180,35 +164,50 @@ func (m *Message) sectionFromWire(st SectionType, buf *util.InputBuffer) error {
 	if lastRRset != nil {
 		s = append(s, lastRRset)
 	}
-
-	if opt != nil {
-		if err := m.edns.FromRRset(opt); err != nil {
-			return err
-		}
-		m.Edns = &m.edns
-	} else {
-		m.Edns = nil
-	}
-
-	if tsig != nil {
-		if tsig, err := TsigFromRRset(tsig); err != nil {
-			return err
-		} else {
-			m.Tsig = tsig
-		}
-	} else {
-		m.Tsig = nil
-	}
-
 	m.sections[st] = s
 	return nil
 }
 
-func (m *Message) Rend(r *MsgRender) {
-	if m.Tsig != nil {
-		m.Header.ARCount -= 1
+func (m *Message) GetEdns() (*EDNS, error) {
+	additional := m.GetSection(AdditionalSection)
+	c := len(additional)
+	if c == 0 {
+		return nil, nil
 	}
 
+	var optRRset *RRset
+	switch additional[c-1].Type {
+	case RR_OPT:
+		optRRset = additional[c-1]
+	case RR_TSIG:
+		if c > 1 && additional[c-2].Type == RR_OPT {
+			optRRset = additional[c-2]
+		}
+	}
+
+	if optRRset == nil {
+		return nil, nil
+	}
+
+	var edns EDNS
+	if err := edns.FromRRset(optRRset); err != nil {
+		return nil, err
+	} else {
+		return &edns, nil
+	}
+}
+
+func (m *Message) GetTsig() (*Tsig, error) {
+	additional := m.GetSection(AdditionalSection)
+	c := len(additional)
+	if c > 0 && additional[c-1].Type == RR_TSIG {
+		return TsigFromRRset(additional[c-1])
+	} else {
+		return nil, nil
+	}
+}
+
+func (m *Message) Rend(r *MsgRender) {
 	(&m.Header).Rend(r)
 
 	if m.Question != nil {
@@ -218,15 +217,17 @@ func (m *Message) Rend(r *MsgRender) {
 	for i := 0; i < SectionCount; i++ {
 		m.sections[i].Rend(r)
 	}
+}
 
-	if m.Edns != nil {
-		m.Edns.Rend(r)
-	}
-
-	if m.Tsig != nil {
-		m.Tsig.Rend(r)
+func (m *Message) RendWithoutTsig(r *MsgRender) {
+	additional := m.GetSection(AdditionalSection)
+	c := len(additional)
+	if c > 0 && additional[c-1].Type == RR_TSIG {
+		m.sections[AdditionalSection] = additional[:c-1]
+		m.Header.ARCount -= 1
+		m.Rend(r)
 		m.Header.ARCount += 1
-		r.WriteUint16At(uint16(m.Header.ARCount), 10)
+		m.sections[AdditionalSection] = additional
 	}
 }
 
@@ -246,9 +247,9 @@ func (m *Message) String() string {
 	buf.WriteString(m.Header.String())
 	buf.WriteByte('\n')
 
-	if m.Edns != nil {
+	if edns, _ := m.GetEdns(); edns != nil {
 		buf.WriteString(";; OPT PSEUDOSECTION:\n")
-		buf.WriteString(m.Edns.String())
+		buf.WriteString(edns.String())
 	}
 
 	buf.WriteString(";; QUESTION SECTION:\n")
@@ -272,9 +273,9 @@ func (m *Message) String() string {
 		buf.WriteString(m.sections[AdditionalSection].String())
 	}
 
-	if m.Tsig != nil {
+	if tsig, _ := m.GetTsig(); tsig != nil {
 		buf.WriteString("\n;; Tsig PSEUDOSECTION:\n")
-		buf.WriteString(m.Tsig.String())
+		buf.WriteString(tsig.String())
 	}
 
 	return buf.String()
@@ -293,8 +294,6 @@ func (m *Message) Clear() {
 	for i := 0; i < SectionCount; i++ {
 		m.sections[i] = m.sections[i].Clear()
 	}
-	m.Edns = nil
-	m.Tsig = nil
 }
 
 func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
@@ -302,27 +301,9 @@ func (m *Message) HasRRset(st SectionType, rrset *RRset) bool {
 }
 
 func (m *Message) SectionRRCount(st SectionType) int {
-	c := m.sections[st].rrCount()
-	if st == AdditionalSection {
-		if m.Edns != nil {
-			c += 1
-		}
-		if m.Tsig != nil {
-			c += 1
-		}
-	}
-	return c
+	return m.sections[st].rrCount()
 }
 
 func (m *Message) SectionRRsetCount(st SectionType) int {
-	c := len(m.sections[st])
-	if st == AdditionalSection {
-		if m.Edns != nil {
-			c += 1
-		}
-		if m.Tsig != nil {
-			c += 1
-		}
-	}
-	return c
+	return len(m.sections[st])
 }

@@ -8,15 +8,11 @@ type MsgBuilder struct {
 	msg *Message
 }
 
-func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) MsgBuilder {
+func NewRequestBuilder(name *Name, typ RRType) MsgBuilder {
 	q := &Question{
 		Name:  *name,
 		Type:  typ,
 		Class: CLASS_IN,
-	}
-	edns := &EDNS{
-		UdpSize:     uint16(size),
-		DnssecAware: dnssec,
 	}
 
 	return NewMsgBuilder(&Message{}).
@@ -24,8 +20,7 @@ func NewRequestBuilder(name *Name, typ RRType, size int, dnssec bool) MsgBuilder
 		SetOpcode(OP_QUERY).
 		SetRcode(R_NOERROR).
 		SetId(util.GenMessageId()).
-		SetQuestion(q).
-		SetEdns(edns)
+		SetQuestion(q)
 }
 
 func NewResponseBuilder(req *Message) MsgBuilder {
@@ -38,8 +33,7 @@ func NewResponseBuilder(req *Message) MsgBuilder {
 		SetHeaderFlag(FLAG_RD, req.Header.GetFlag(FLAG_RD)).
 		SetOpcode(req.Header.Opcode).
 		SetRcode(R_NOERROR).
-		SetQuestion(req.Question).
-		SetEdns(req.Edns)
+		SetQuestion(req.Question)
 }
 
 func NewMsgBuilder(msg *Message) MsgBuilder {
@@ -89,12 +83,9 @@ func (b MsgBuilder) AddRRset(st SectionType, rrset *RRset) MsgBuilder {
 }
 
 func (b MsgBuilder) SetEdns(edns *EDNS) MsgBuilder {
-	if edns == nil {
-		b.msg.Edns = nil
-	} else {
-		b.msg.edns = *edns
-		b.msg.Edns = &b.msg.edns
-	}
+	section := b.msg.sections[AdditionalSection]
+	section = append(section, edns.ToRRset())
+	b.msg.sections[AdditionalSection] = section
 	return b
 }
 
@@ -163,8 +154,6 @@ func (m *Message) clearSection(st SectionType) {
 	case AuthSection:
 		m.Header.NSCount = 0
 	case AdditionalSection:
-		m.Edns = nil
-		m.Tsig = nil
 		m.Header.ARCount = 0
 	default:
 		panic("question section couldn't be cleared")
@@ -191,16 +180,4 @@ func (b MsgBuilder) FilterRRset(st SectionType, f func(*RRset) bool) MsgBuilder 
 		b.msg.sections[st] = rrsets[:l]
 	}
 	return b
-}
-
-func (b MsgBuilder) SetTsig(tsig *Tsig) MsgBuilder {
-	b.msg.setTsig(tsig)
-	return b
-}
-
-func (m *Message) setTsig(tsig *Tsig) {
-	if tsig != nil {
-		tsig.OrigId = m.Header.Id
-	}
-	m.Tsig = tsig
 }

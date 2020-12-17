@@ -14,7 +14,7 @@ func TestMessageBuilderFilter(t *testing.T) {
 	msg = NewMsgBuilder(msg).FilterRRset(AdditionalSection, func(rrset *RRset) bool {
 		return rrset.Name.IsSubDomain(zone)
 	}).Done()
-	Equal(t, msg.SectionRRsetCount(AdditionalSection), 3)
+	Equal(t, msg.SectionRRsetCount(AdditionalSection), 2)
 
 	msg = NewMsgBuilder(msg).FilterRRset(AnswerSection, func(rrset *RRset) bool {
 		return rrset.Type == RR_AAAA
