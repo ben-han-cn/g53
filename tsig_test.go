@@ -1,6 +1,7 @@
 package g53
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/ben-han-cn/g53/util"
@@ -14,4 +15,12 @@ func TestVerify(t *testing.T) {
 		"z08GzEnlCDGy/W3Zw/2NHg==",
 		"hmac-md5")
 	Assert(t, key.VerifyMAC(req, nil) == nil, "")
+
+	buf := util.NewOutputBuffer(1024)
+	key.ToWire(buf)
+
+	key, _ = TsigKeyFromWire(util.NewInputBuffer(buf.Data()))
+	Equal(t, key.Name, "alibaba.")
+	rawSecret, _ := fromBase64([]byte("z08GzEnlCDGy/W3Zw/2NHg=="))
+	Assert(t, bytes.Equal(key.rawSecret, rawSecret), "")
 }

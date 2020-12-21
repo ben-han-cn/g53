@@ -8,6 +8,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"hash"
 	"strings"
 	"time"
@@ -78,6 +79,65 @@ func (k TsigKey) VerifyMAC(msg *Message, requestMac []byte) error {
 		return ErrSig
 	} else {
 		return nil
+	}
+
+}
+
+func (k TsigKey) ToWire(buf *util.OutputBuffer) {
+	buf.WriteUint8(uint8(len(k.Name)))
+	buf.WriteData([]byte(k.Name))
+	buf.WriteUint8(uint8(len(k.algo)))
+	buf.WriteData([]byte(k.algo))
+	buf.WriteUint16(uint16(len(k.rawSecret)))
+	buf.WriteData([]byte(k.rawSecret))
+}
+
+func TsigKeyFromWire(buf *util.InputBuffer) (TsigKey, error) {
+	l, err := buf.ReadUint8()
+	if err != nil {
+		return TsigKey{}, fmt.Errorf("read name len failed:%s", err.Error())
+	}
+
+	name, err := readBytes(buf, uint(l))
+	if err != nil {
+		return TsigKey{}, fmt.Errorf("read name failed:%s", err.Error())
+	}
+
+	l, err = buf.ReadUint8()
+	if err != nil {
+		return TsigKey{}, fmt.Errorf("read algo len failed:%s", err.Error())
+	}
+
+	algo, err := readBytes(buf, uint(l))
+	if err != nil {
+		return TsigKey{}, fmt.Errorf("read algo failed:%s", err.Error())
+	}
+
+	ll, err := buf.ReadUint16()
+	if err != nil {
+		return TsigKey{}, fmt.Errorf("read rawSecret len failed:%s", err.Error())
+	}
+
+	rawSecret, err := readBytes(buf, uint(ll))
+	if err != nil {
+		return TsigKey{}, fmt.Errorf("read secret ailed:%s", err.Error())
+	}
+
+	return TsigKey{
+		Name:      string(name),
+		algo:      TsigAlgorithm(algo),
+		rawSecret: rawSecret,
+	}, nil
+}
+
+func readBytes(buf *util.InputBuffer, l uint) ([]byte, error) {
+	bs, err := buf.ReadBytes(l)
+	if err != nil {
+		return nil, err
+	} else {
+		clone := make([]byte, len(bs))
+		copy(clone, bs)
+		return clone, nil
 	}
 }
 
