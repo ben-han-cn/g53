@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 )
 
 type InputBuffer struct {
@@ -83,6 +84,45 @@ func (buf *InputBuffer) ReadBytes(length uint) ([]byte, error) {
 	data := buf.data[p : p+length]
 	buf.pos += length
 	return data, nil
+}
+
+func (buf *InputBuffer) ReadVariableLenBytes() ([]byte, error) {
+	b0, err := buf.ReadUint8()
+	if err != nil {
+		return nil, err
+	}
+
+	var byteCount int
+	switch b0 & 7 {
+	case 7:
+		byteCount = 4
+	case 3:
+		byteCount = 3
+	case 5 | 1:
+		byteCount = 2
+	default:
+		byteCount = 1
+	}
+
+	if l, err := buf.readVariableLen(b0, byteCount); err == nil {
+		return buf.ReadBytes(l)
+	} else {
+		return nil, err
+	}
+}
+
+func (buf *InputBuffer) readVariableLen(firstByte uint8, byteCount int) (uint, error) {
+	l := uint(firstByte) >> byteCount
+	shift := 8 - byteCount
+	for i := 1; i < byteCount; i++ {
+		b, err := buf.ReadUint8()
+		if err != nil {
+			return 0, err
+		}
+		l |= uint(b) << shift
+		shift += 8
+	}
+	return l, nil
 }
 
 type OutputBuffer struct {
@@ -188,4 +228,31 @@ func (out *OutputBuffer) WriteUint32(data uint32) {
 
 func (out *OutputBuffer) WriteData(data []uint8) {
 	out.data = append(out.data, data...)
+}
+
+func (out *OutputBuffer) WriteVariableLenBytes(data []uint8) error {
+	n := len(data)
+	byteCount := 0
+	switch {
+	case n < 128:
+		byteCount = 1
+		n = n << 1
+	case n < 16384:
+		byteCount = 2
+		n = (n << 2) | 1
+	case n < 2097152:
+		byteCount = 3
+		n = (n << 3) | 3
+	case n < 268435456:
+		byteCount = 4
+		n = (n << 4) | 7
+	default:
+		return fmt.Errorf("slice is too long %d which is bigger than 268435455", n)
+	}
+	d := [4]byte{
+		byte(n), byte(n >> 8), byte(n >> 16), byte(n >> 24),
+	}
+	out.WriteData(d[:byteCount])
+	out.WriteData(data)
+	return nil
 }
