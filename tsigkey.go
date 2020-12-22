@@ -84,41 +84,23 @@ func (k TsigKey) VerifyMAC(msg *Message, requestMac []byte) error {
 }
 
 func (k TsigKey) ToWire(buf *util.OutputBuffer) {
-	buf.WriteUint8(uint8(len(k.Name)))
-	buf.WriteData([]byte(k.Name))
-	buf.WriteUint8(uint8(len(k.algo)))
-	buf.WriteData([]byte(k.algo))
-	buf.WriteUint16(uint16(len(k.rawSecret)))
-	buf.WriteData([]byte(k.rawSecret))
+	buf.WriteVariableLenBytes([]byte(k.Name))
+	buf.WriteVariableLenBytes([]byte(k.algo))
+	buf.WriteVariableLenBytes(k.rawSecret)
 }
 
 func TsigKeyFromWire(buf *util.InputBuffer) (TsigKey, error) {
-	l, err := buf.ReadUint8()
-	if err != nil {
-		return TsigKey{}, fmt.Errorf("read name len failed:%s", err.Error())
-	}
-
-	name, err := readBytes(buf, uint(l))
+	name, err := buf.ReadVariableLenBytes()
 	if err != nil {
 		return TsigKey{}, fmt.Errorf("read name failed:%s", err.Error())
 	}
 
-	l, err = buf.ReadUint8()
-	if err != nil {
-		return TsigKey{}, fmt.Errorf("read algo len failed:%s", err.Error())
-	}
-
-	algo, err := readBytes(buf, uint(l))
+	algo, err := buf.ReadVariableLenBytes()
 	if err != nil {
 		return TsigKey{}, fmt.Errorf("read algo failed:%s", err.Error())
 	}
 
-	ll, err := buf.ReadUint16()
-	if err != nil {
-		return TsigKey{}, fmt.Errorf("read rawSecret len failed:%s", err.Error())
-	}
-
-	rawSecret, err := readBytes(buf, uint(ll))
+	rawSecret, err := buf.ReadVariableLenBytes()
 	if err != nil {
 		return TsigKey{}, fmt.Errorf("read secret ailed:%s", err.Error())
 	}
