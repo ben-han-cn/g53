@@ -98,7 +98,7 @@ func (buf *InputBuffer) ReadVariableLenBytes() ([]byte, error) {
 		byteCount = 4
 	case 3:
 		byteCount = 3
-	case 5 | 1:
+	case 1, 5:
 		byteCount = 2
 	default:
 		byteCount = 1
