@@ -53,3 +53,9 @@ func StringSliceCompare(strs1 []string, strs2 []string, caseSensitive bool) int 
 		return -1
 	}
 }
+
+func CloneBytes(bs []byte) []byte {
+	clone := make([]byte, len(bs))
+	copy(clone, bs)
+	return clone
+}

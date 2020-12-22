@@ -106,9 +106,9 @@ func TsigKeyFromWire(buf *util.InputBuffer) (TsigKey, error) {
 	}
 
 	return TsigKey{
-		Name:      string(name),
-		algo:      TsigAlgorithm(algo),
-		rawSecret: rawSecret,
+		Name:      string(util.CloneBytes(name)),
+		algo:      TsigAlgorithm(util.CloneBytes(algo)),
+		rawSecret: util.CloneBytes(rawSecret),
 	}, nil
 }
 
