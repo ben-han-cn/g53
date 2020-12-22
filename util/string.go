@@ -1,8 +1,10 @@
 package util
 
 import (
+	"reflect"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 func HexStrToBytes(s string) (result []uint8, err error) {
@@ -58,4 +60,21 @@ func CloneBytes(bs []byte) []byte {
 	clone := make([]byte, len(bs))
 	copy(clone, bs)
 	return clone
+}
+
+func BytesToString(bytes []byte) string {
+	hdr := *(*reflect.SliceHeader)(unsafe.Pointer(&bytes))
+	return *(*string)(unsafe.Pointer(&reflect.StringHeader{
+		Data: hdr.Data,
+		Len:  hdr.Len,
+	}))
+}
+
+func StringToBytes(str string) []byte {
+	hdr := *(*reflect.StringHeader)(unsafe.Pointer(&str))
+	return *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: hdr.Data,
+		Len:  hdr.Len,
+		Cap:  hdr.Len,
+	}))
 }

@@ -84,8 +84,10 @@ func (k TsigKey) VerifyMAC(msg *Message, requestMac []byte) error {
 }
 
 func (k TsigKey) ToWire(buf *util.OutputBuffer) {
-	buf.WriteVariableLenBytes([]byte(k.Name))
-	buf.WriteVariableLenBytes([]byte(k.algo))
+	buf.WriteVariableLenBytes(util.StringToBytes(k.Name))
+	//convert between string and TsigAlgorithm won't cause copy
+	//since they have same underlaying reprentation
+	buf.WriteVariableLenBytes(util.StringToBytes(string(k.algo)))
 	buf.WriteVariableLenBytes(k.rawSecret)
 }
 
@@ -106,8 +108,9 @@ func TsigKeyFromWire(buf *util.InputBuffer) (TsigKey, error) {
 	}
 
 	return TsigKey{
-		Name:      string(util.CloneBytes(name)),
-		algo:      TsigAlgorithm(util.CloneBytes(algo)),
+		//string convert will copy the slice
+		Name:      string(name),
+		algo:      TsigAlgorithm(algo),
 		rawSecret: util.CloneBytes(rawSecret),
 	}, nil
 }

@@ -20,4 +20,16 @@ func TestBuffer(t *testing.T) {
 			t.FailNow()
 		}
 	}
+
+	for _, s := range []string{"", "good", "ddddd, dddd"} {
+		out := NewOutputBuffer(1024)
+		out.WriteVariableLenBytes(StringToBytes(s))
+
+		in := NewInputBuffer(out.Data())
+		strRead, _ := in.ReadVariableLenBytes()
+		if BytesToString(strRead) != s || string(strRead) != s {
+			t.Errorf("for string %s failed\n", s)
+			t.FailNow()
+		}
+	}
 }

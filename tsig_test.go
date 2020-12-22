@@ -19,7 +19,12 @@ func TestVerify(t *testing.T) {
 	buf := util.NewOutputBuffer(1024)
 	key.ToWire(buf)
 
-	key, _ = TsigKeyFromWire(util.NewInputBuffer(buf.Data()))
+	data := buf.Data()
+	key, _ = TsigKeyFromWire(util.NewInputBuffer(data))
+	//key should hold its own memory, so clean the underlaying data won't change its content
+	for i := range data {
+		data[i] = 0
+	}
 	Equal(t, key.Name, "alibaba.")
 	rawSecret, _ := fromBase64([]byte("z08GzEnlCDGy/W3Zw/2NHg=="))
 	Assert(t, bytes.Equal(key.rawSecret, rawSecret), "")
